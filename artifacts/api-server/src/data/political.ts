@@ -327,11 +327,22 @@ export const QUESTIONS: InsertQuestion[] = [
     id: "labor-1",
     issueId: "labor",
     prompt:
-      "We should strengthen unions and raise the minimum wage to give workers more power.",
+      "The federal minimum wage should be raised significantly.",
     helpText:
-      "This weighs pro-worker and pro-union policy against a more business-friendly approach.",
+      "This is only about the wage floor — it weighs a higher minimum wage against letting the market set pay.",
     kind: "scale",
     displayOrder: 14,
+    options: SCALE_OPTIONS,
+  },
+  {
+    id: "labor-2",
+    issueId: "labor",
+    prompt:
+      "Laws should make it easier for workers to organize and join unions.",
+    helpText:
+      "This is only about unions — it weighs stronger collective-bargaining rights against a more business-friendly approach.",
+    kind: "scale",
+    displayOrder: 15,
     options: SCALE_OPTIONS,
   },
   {
@@ -342,7 +353,7 @@ export const QUESTIONS: InsertQuestion[] = [
     helpText:
       "This contrasts stronger tech oversight with a lighter-touch, innovation-first approach.",
     kind: "scale",
-    displayOrder: 15,
+    displayOrder: 16,
     options: SCALE_OPTIONS,
   },
   {
@@ -353,7 +364,7 @@ export const QUESTIONS: InsertQuestion[] = [
     helpText:
       "This weighs expanding voting access against tighter election-security requirements.",
     kind: "scale",
-    displayOrder: 16,
+    displayOrder: 17,
     options: SCALE_OPTIONS,
   },
 ];
