@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { useInvalidateVoterData } from "@/lib/invalidate";
 import {
   useListQuestions,
   useGetMyProfile,
@@ -26,6 +27,7 @@ export default function Onboarding() {
   const updateLocation = useUpdateMyLocation();
   const submitAnswers = useSubmitAnswers();
   const updateStance = useUpdateMyStance();
+  const invalidate = useInvalidateVoterData();
 
   const [phase, setPhase] = useState<Phase>("location");
   const [zip, setZip] = useState("");
@@ -44,10 +46,21 @@ export default function Onboarding() {
 
   const zipValid = /^\d{5}$/.test(zip.trim());
 
+  // Pre-fill ZIP from a saved location once it loads (does not auto-advance).
+  useEffect(() => {
+    const saved = profile?.location?.zip;
+    if (saved) setZip((z) => (z === "" ? saved : z));
+  }, [profile?.location?.zip]);
+
   function submitLocation() {
     updateLocation.mutate(
       { data: { zip: zip.trim() } },
-      { onSuccess: () => setPhase("questions") },
+      {
+        onSuccess: () => {
+          void invalidate();
+          setPhase("questions");
+        },
+      },
     );
   }
 
@@ -73,6 +86,7 @@ export default function Onboarding() {
       { data: { answers: payload, completeOnboarding: true } },
       {
         onSuccess: (prof) => {
+          void invalidate();
           setStances(prof.stances ?? []);
           setPhase("prioritize");
         },
@@ -100,13 +114,9 @@ export default function Onboarding() {
     } catch {
       // Non-fatal: onboarding is already complete; prioritization is a refinement.
     } finally {
+      await invalidate();
       navigate("/matches");
     }
-  }
-
-  // Skip the location step if the voter already has one saved.
-  if (phase === "location" && profile?.location?.zip && zip === "") {
-    setZip(profile.location.zip);
   }
 
   return (

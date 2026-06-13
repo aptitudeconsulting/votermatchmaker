@@ -35,11 +35,11 @@ export default function CandidateDetail() {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16 text-center">
         <h1 className="text-2xl font-bold">Candidate not found</h1>
-        <Link href="/candidates">
-          <Button variant="outline" className="mt-4">
+        <Button asChild variant="outline" className="mt-4">
+          <Link href="/candidates">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to candidates
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -53,11 +53,11 @@ export default function CandidateDetail() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8 md:py-12">
-      <Link href="/candidates">
-        <Button variant="ghost" size="sm" className="-ml-2">
+      <Button asChild variant="ghost" size="sm" className="-ml-2">
+        <Link href="/candidates">
           <ArrowLeft className="mr-2 h-4 w-4" /> All candidates
-        </Button>
-      </Link>
+        </Link>
+      </Button>
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <Avatar className="h-20 w-20">

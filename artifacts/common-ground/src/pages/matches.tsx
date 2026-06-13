@@ -58,11 +58,11 @@ export default function Matches() {
                 Answer a few questions and we'll match you to candidates.
               </p>
             </div>
-            <Link href="/onboarding">
-              <Button>
+            <Button asChild>
+              <Link href="/onboarding">
                 Start onboarding <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (

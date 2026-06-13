@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { importanceLabel } from "@/lib/issue-meta";
+import { useInvalidateVoterData } from "@/lib/invalidate";
 import { MapPin, RotateCcw } from "lucide-react";
 
 export default function Profile() {
@@ -34,6 +35,7 @@ export default function Profile() {
   const updateLocation = useUpdateMyLocation();
   const updateStance = useUpdateMyStance();
   const resetProfile = useResetMyProfile();
+  const invalidate = useInvalidateVoterData();
 
   const [zip, setZip] = useState("");
 
@@ -54,12 +56,18 @@ export default function Profile() {
   const stances = profile?.stances ?? [];
 
   function saveLocation() {
-    updateLocation.mutate({ data: { zip: zip.trim() } });
+    updateLocation.mutate(
+      { data: { zip: zip.trim() } },
+      { onSuccess: () => void invalidate() },
+    );
   }
 
   function handleReset() {
     resetProfile.mutate(undefined, {
-      onSuccess: () => navigate("/onboarding"),
+      onSuccess: async () => {
+        await invalidate();
+        navigate("/onboarding");
+      },
     });
   }
 
@@ -125,7 +133,10 @@ export default function Profile() {
                   key={s.issueId}
                   stance={s}
                   onChange={(importance) =>
-                    updateStance.mutate({ issueId: s.issueId, data: { importance } })
+                    updateStance.mutate(
+                      { issueId: s.issueId, data: { importance } },
+                      { onSuccess: () => void invalidate() },
+                    )
                   }
                 />
               ))}
@@ -178,6 +189,10 @@ function StanceRow({
   onChange: (importance: number) => void;
 }) {
   const [value, setValue] = useState(stance.importance);
+
+  useEffect(() => {
+    setValue(stance.importance);
+  }, [stance.importance]);
 
   return (
     <div className="space-y-2">
