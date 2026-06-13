@@ -10,11 +10,11 @@ import { useGetMyProfile } from "@workspace/api-client-react";
 import { Layout } from "./components/layout";
 import Home from "./pages/home";
 import NotFound from "./pages/not-found";
-
-// Use placeholder or simple text pages for now while building them
-function Placeholder({ title }: { title: string }) {
-  return <div className="p-8 text-center text-2xl font-bold">{title}</div>;
-}
+import Onboarding from "./pages/onboarding";
+import Matches from "./pages/matches";
+import Candidates from "./pages/candidates";
+import CandidateDetail from "./pages/candidate-detail";
+import Profile from "./pages/profile";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -112,11 +112,7 @@ function ClerkQueryClientCacheInvalidator() {
 
 function HomeRedirect() {
   // If signed in, check profile to redirect to matches or onboarding
-  const { data: profile, isLoading } = useGetMyProfile({
-    query: {
-      retry: false,
-    }
-  });
+  const { data: profile, isLoading } = useGetMyProfile();
 
   return (
     <>
@@ -185,11 +181,11 @@ function AppRoutes() {
             <Route path="/" component={HomeRedirect} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
-            <Route path="/onboarding" component={() => <ProtectedRoute component={() => <Placeholder title="Onboarding" />} />} />
-            <Route path="/matches" component={() => <ProtectedRoute component={() => <Placeholder title="Matches" />} />} />
-            <Route path="/candidates" component={() => <Placeholder title="Candidates" />} />
-            <Route path="/candidates/:id" component={() => <Placeholder title="Candidate Detail" />} />
-            <Route path="/profile" component={() => <ProtectedRoute component={() => <Placeholder title="Profile" />} />} />
+            <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
+            <Route path="/matches" component={() => <ProtectedRoute component={Matches} />} />
+            <Route path="/candidates" component={Candidates} />
+            <Route path="/candidates/:id" component={CandidateDetail} />
+            <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

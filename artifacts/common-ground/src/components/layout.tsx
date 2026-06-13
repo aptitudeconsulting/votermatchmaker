@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Show, useClerk, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 
