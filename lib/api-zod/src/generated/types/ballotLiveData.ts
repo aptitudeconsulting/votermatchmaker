@@ -5,16 +5,14 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { BallotLiveDataReason } from './ballotLiveDataReason';
 
-export interface VoterLocation {
+export interface BallotLiveData {
+  available: boolean;
   /** @nullable */
-  zip?: string | null;
+  reason?: BallotLiveDataReason;
   /** @nullable */
-  address?: string | null;
+  electionName?: string | null;
   /** @nullable */
-  state?: string | null;
-  /** @nullable */
-  stateName?: string | null;
-  /** @nullable */
-  district?: string | null;
+  electionDay?: string | null;
 }

@@ -3,7 +3,7 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: Common Ground — match voters with candidates by values
+  description: Voter Compass — match voters with candidates by values
 servers:
   - url: /api
     description: Base API path
@@ -18,6 +18,8 @@ tags:
     description: Candidate profiles and legislative records
   - name: matches
     description: Voter/candidate match scoring
+  - name: ballot
+    description: Local ballot information and non-partisan voting resources
   - name: stats
     description: Aggregate stats
 paths:
@@ -298,6 +300,21 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /me/ballot:
+    get:
+      operationId: getMyBallot
+      tags: [ballot]
+      summary: Local ballot information and non-partisan voting resources for the voter
+      responses:
+        "200":
+          description: Ballot information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BallotInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
 components:
   responses:
@@ -657,3 +674,71 @@ components:
           type: integer
         lastSyncedAt:
           type: ["string", "null"]
+
+    BallotResource:
+      type: object
+      required: [name, description, url, category]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        category:
+          type: string
+          enum: [ballot-measures, sample-ballot, registration, polling, research]
+
+    BallotMeasure:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        summary:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+        proStatement:
+          type: ["string", "null"]
+        conStatement:
+          type: ["string", "null"]
+        passageThreshold:
+          type: ["string", "null"]
+
+    BallotLiveData:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+        reason:
+          type: ["string", "null"]
+          enum: [no_key, no_election, error, null]
+        electionName:
+          type: ["string", "null"]
+        electionDay:
+          type: ["string", "null"]
+
+    BallotInfo:
+      type: object
+      required: [location, hasLocation, liveData, measures, resources]
+      properties:
+        location:
+          $ref: "#/components/schemas/VoterLocation"
+        hasLocation:
+          type: boolean
+        liveData:
+          $ref: "#/components/schemas/BallotLiveData"
+        measures:
+          type: array
+          items:
+            $ref: "#/components/schemas/BallotMeasure"
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/BallotResource"

@@ -66,7 +66,7 @@ export default function Home() {
       <section className="w-full py-24 px-4 bg-background">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How Common Ground Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How Voter Compass Works</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               A transparent, non-partisan approach to finding your political matches.
             </p>

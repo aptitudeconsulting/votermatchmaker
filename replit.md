@@ -1,6 +1,8 @@
-# Common Ground
+# Voter Compass
 
-A non-partisan tool that matches voters to candidates by comparing the voter's ranked values against candidate positions derived from real Congress.gov legislative records.
+A non-partisan tool that matches voters to candidates by comparing the voter's ranked values against candidate positions derived from real Congress.gov legislative records. Tagline: "Find candidates who vote your values."
+
+It also provides a ZIP-based non-partisan Ballot feature: an always-on curated hub of official/non-partisan voting resources, plus live ballot measures via the Google Civic Information API when `GOOGLE_CIVIC_API_KEY` is set.
 
 ## Run & Operate
 

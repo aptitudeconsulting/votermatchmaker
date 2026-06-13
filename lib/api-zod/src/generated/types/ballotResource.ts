@@ -5,12 +5,11 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { BallotResourceCategory } from './ballotResourceCategory';
 
-export interface Issue {
-  id: string;
+export interface BallotResource {
   name: string;
-  shortLabel: string;
   description: string;
-  /** @nullable */
-  icon?: string | null;
+  url: string;
+  category: BallotResourceCategory;
 }

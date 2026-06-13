@@ -21,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <path d="M12 2L2 12H5V22H19V12H22L12 2Z" fill="currentColor" className="text-primary"/>
               <circle cx="12" cy="14" r="3" fill="currentColor" className="text-primary-foreground" />
             </svg>
-            <span className="font-bold sm:inline-block">Common Ground</span>
+            <span className="font-bold sm:inline-block">Voter Compass</span>
           </Link>
 
           <div className="flex flex-1 items-center justify-end space-x-4">
@@ -32,6 +32,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
                 <Link href="/candidates">
                   <Button variant="ghost" className={location === "/candidates" ? "bg-accent" : ""}>Candidates</Button>
+                </Link>
+                <Link href="/ballot">
+                  <Button variant="ghost" className={location === "/ballot" ? "bg-accent" : ""}>Ballot</Button>
                 </Link>
                 <Link href="/profile">
                   <Button variant="ghost" className={location === "/profile" ? "bg-accent" : ""}>Profile</Button>

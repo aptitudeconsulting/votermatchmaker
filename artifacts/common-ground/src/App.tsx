@@ -15,6 +15,7 @@ import Matches from "./pages/matches";
 import Candidates from "./pages/candidates";
 import CandidateDetail from "./pages/candidate-detail";
 import Profile from "./pages/profile";
+import Ballot from "./pages/ballot";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -167,7 +168,7 @@ function AppRoutes() {
         signUp: {
           start: {
             title: "Create your account",
-            subtitle: "Join Common Ground",
+            subtitle: "Join Voter Compass",
           },
         },
       }}
@@ -186,6 +187,7 @@ function AppRoutes() {
             <Route path="/candidates" component={Candidates} />
             <Route path="/candidates/:id" component={CandidateDetail} />
             <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+            <Route path="/ballot" component={() => <ProtectedRoute component={Ballot} />} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

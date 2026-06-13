@@ -6,15 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface VoterLocation {
+export interface BallotMeasure {
+  id: string;
+  title: string;
   /** @nullable */
-  zip?: string | null;
+  subtitle?: string | null;
   /** @nullable */
-  address?: string | null;
+  summary?: string | null;
   /** @nullable */
-  state?: string | null;
+  url?: string | null;
   /** @nullable */
-  stateName?: string | null;
+  proStatement?: string | null;
   /** @nullable */
-  district?: string | null;
+  conStatement?: string | null;
+  /** @nullable */
+  passageThreshold?: string | null;
 }

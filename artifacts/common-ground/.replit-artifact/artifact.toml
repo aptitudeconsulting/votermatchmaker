@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Common Ground"
+title = "Voter Compass"
 version = "1.0.0"
 id = "artifacts/common-ground"
 router = "path"
