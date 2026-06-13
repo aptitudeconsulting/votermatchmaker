@@ -13,7 +13,8 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`)
+- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); optional `GOOGLE_CIVIC_API_KEY` for live ballot measures
+- Public mirror of all project files: https://github.com/aptitudeconsulting/votermatchmaker (push with a token that has Contents:write — see memory)
 
 ## Stack
 

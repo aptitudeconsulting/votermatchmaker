@@ -193,6 +193,14 @@ export default function Ballot() {
             </section>
           )}
 
+          {ballot?.hasLocation && !ballot?.liveData?.available && (
+            <p className="mt-8 text-sm text-muted-foreground">
+              No live ballot measures are available for your area right now. Use the
+              official and non-partisan resources below to look up your full sample
+              ballot.
+            </p>
+          )}
+
           <section className="mt-10">
             <div className="flex items-center gap-2">
               <Landmark className="h-5 w-5 text-primary" />
