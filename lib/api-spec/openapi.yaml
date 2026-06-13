@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Common Ground — match voters with candidates by values
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: issues
+    description: Canonical political issues and onboarding questions
+  - name: profile
+    description: The signed-in voter's profile and issues graph
+  - name: candidates
+    description: Candidate profiles and legislative records
+  - name: matches
+    description: Voter/candidate match scoring
+  - name: stats
+    description: Aggregate stats
 paths:
   /healthz:
     get:
@@ -24,7 +34,291 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /issues:
+    get:
+      operationId: listIssues
+      tags: [issues]
+      summary: List canonical issues
+      responses:
+        "200":
+          description: Issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+
+  /questions:
+    get:
+      operationId: listQuestions
+      tags: [issues]
+      summary: List onboarding questions
+      parameters:
+        - name: issueId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+
+  /stats/overview:
+    get:
+      operationId: getStatsOverview
+      tags: [stats]
+      summary: Aggregate stats for the landing page
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsOverview"
+
+  /me/profile:
+    get:
+      operationId: getMyProfile
+      tags: [profile]
+      summary: Get the signed-in voter's profile
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoterProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/location:
+    put:
+      operationId: updateMyLocation
+      tags: [profile]
+      summary: Set or update the voter's location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoterProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/answers:
+    post:
+      operationId: submitAnswers
+      tags: [profile]
+      summary: Submit onboarding answers and recompute the issues graph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnswersInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoterProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/stances/{issueId}:
+    patch:
+      operationId: updateMyStance
+      tags: [profile]
+      summary: Manually refine a single issue stance
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StanceUpdate"
+      responses:
+        "200":
+          description: Updated stance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueStance"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/reset:
+    post:
+      operationId: resetMyProfile
+      tags: [profile]
+      summary: Clear the voter's answers and issues graph
+      responses:
+        "200":
+          description: Reset profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoterProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /candidates:
+    get:
+      operationId: listCandidates
+      tags: [candidates]
+      summary: List candidates
+      parameters:
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [senate, house, local]
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Candidate"
+
+  /candidates/{id}:
+    get:
+      operationId: getCandidate
+      tags: [candidates]
+      summary: Get a candidate's full profile, positions, and record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Candidate detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /me/matches:
+    get:
+      operationId: listMyMatches
+      tags: [matches]
+      summary: Ranked candidate matches for the signed-in voter
+      parameters:
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [senate, house, local]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/matches/{candidateId}:
+    get:
+      operationId: getMyMatch
+      tags: [matches]
+      summary: Detailed match breakdown for one candidate
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +328,332 @@ components:
       required:
         - status
 
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Issue:
+      type: object
+      required: [id, name, shortLabel, description]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        shortLabel:
+          type: string
+        description:
+          type: string
+        icon:
+          type: ["string", "null"]
+
+    QuestionOption:
+      type: object
+      required: [value, label]
+      properties:
+        value:
+          type: number
+        label:
+          type: string
+        description:
+          type: ["string", "null"]
+
+    Question:
+      type: object
+      required: [id, issueId, issueName, prompt, kind, order, options]
+      properties:
+        id:
+          type: string
+        issueId:
+          type: string
+        issueName:
+          type: string
+        prompt:
+          type: string
+        helpText:
+          type: ["string", "null"]
+        kind:
+          type: string
+          enum: [scale, choice]
+        order:
+          type: integer
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionOption"
+
+    VoterLocation:
+      type: object
+      properties:
+        zip:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        stateName:
+          type: ["string", "null"]
+        district:
+          type: ["string", "null"]
+
+    IssueStance:
+      type: object
+      required: [issueId, issueName, position, importance, source]
+      properties:
+        issueId:
+          type: string
+        issueName:
+          type: string
+        position:
+          type: number
+        importance:
+          type: number
+        source:
+          type: string
+          enum: [onboarding, manual]
+
+    VoterProfile:
+      type: object
+      required:
+        - hasProfile
+        - completedOnboarding
+        - stances
+        - answeredCount
+        - totalQuestions
+      properties:
+        hasProfile:
+          type: boolean
+        completedOnboarding:
+          type: boolean
+        location:
+          oneOf:
+            - $ref: "#/components/schemas/VoterLocation"
+            - type: "null"
+        stances:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueStance"
+        answeredCount:
+          type: integer
+        totalQuestions:
+          type: integer
+        updatedAt:
+          type: ["string", "null"]
+
+    AnswerInput:
+      type: object
+      required: [questionId, value]
+      properties:
+        questionId:
+          type: string
+        value:
+          type: number
+
+    AnswersInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerInput"
+        completeOnboarding:
+          type: boolean
+
+    LocationInput:
+      type: object
+      properties:
+        zip:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+
+    StanceUpdate:
+      type: object
+      properties:
+        position:
+          type: ["number", "null"]
+        importance:
+          type: ["number", "null"]
+
+    Candidate:
+      type: object
+      required: [id, name, level, currentRole, incumbent, dataSource, isSample]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        party:
+          type: ["string", "null"]
+        level:
+          type: string
+          enum: [senate, house, local]
+        state:
+          type: ["string", "null"]
+        stateName:
+          type: ["string", "null"]
+        district:
+          type: ["string", "null"]
+        currentRole:
+          type: string
+        incumbent:
+          type: boolean
+        photoUrl:
+          type: ["string", "null"]
+        bioguideId:
+          type: ["string", "null"]
+        dataSource:
+          type: string
+          enum: [congress.gov, sample]
+        isSample:
+          type: boolean
+
+    CandidatePosition:
+      type: object
+      required: [issueId, issueName, position, confidence, summary, sourceCount]
+      properties:
+        issueId:
+          type: string
+        issueName:
+          type: string
+        position:
+          type: number
+        confidence:
+          type: number
+        summary:
+          type: string
+        sourceCount:
+          type: integer
+
+    RecordItem:
+      type: object
+      required: [id, title, kind]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        kind:
+          type: string
+          enum: [sponsored, cosponsored, statement]
+        issueId:
+          type: ["string", "null"]
+        issueName:
+          type: ["string", "null"]
+        date:
+          type: ["string", "null"]
+        billNumber:
+          type: ["string", "null"]
+        congress:
+          type: ["integer", "null"]
+        url:
+          type: ["string", "null"]
+        summary:
+          type: ["string", "null"]
+
+    CandidateDetail:
+      type: object
+      required: [candidate, positions, record, recordCount]
+      properties:
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        positions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidatePosition"
+        record:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordItem"
+        recordCount:
+          type: integer
+
+    MatchIssueBreakdown:
+      type: object
+      required:
+        - issueId
+        - issueName
+        - voterPosition
+        - voterImportance
+        - candidatePosition
+        - candidateConfidence
+        - alignment
+      properties:
+        issueId:
+          type: string
+        issueName:
+          type: string
+        voterPosition:
+          type: number
+        voterImportance:
+          type: number
+        candidatePosition:
+          type: number
+        candidateConfidence:
+          type: number
+        alignment:
+          type: number
+        summary:
+          type: ["string", "null"]
+
+    MatchResult:
+      type: object
+      required: [candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount]
+      properties:
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        score:
+          type: number
+        grade:
+          type: string
+        summary:
+          type: string
+        topAgreements:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchIssueBreakdown"
+        topDisagreements:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchIssueBreakdown"
+        sharedPriorityCount:
+          type: integer
+
+    MatchDetail:
+      type: object
+      required: [candidate, score, grade, summary, coverage, breakdown]
+      properties:
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        score:
+          type: number
+        grade:
+          type: string
+        summary:
+          type: string
+        coverage:
+          type: number
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchIssueBreakdown"
+
+    StatsOverview:
+      type: object
+      required: [candidateCount, issueCount, recordCount, stateCount]
+      properties:
+        candidateCount:
+          type: integer
+        issueCount:
+          type: integer
+        recordCount:
+          type: integer
+        stateCount:
+          type: integer
+        lastSyncedAt:
+          type: ["string", "null"]

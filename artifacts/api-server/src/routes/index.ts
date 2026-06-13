@@ -1,8 +1,18 @@
 import { Router, type IRouter } from "express";
-import healthRouter from "./health";
+import health from "./health";
+import issues from "./issues";
+import stats from "./stats";
+import candidates from "./candidates";
+import profile from "./profile";
+import matches from "./matches";
 
 const router: IRouter = Router();
 
-router.use(healthRouter);
+router.use(health);
+router.use(issues);
+router.use(stats);
+router.use(candidates);
+router.use(profile);
+router.use(matches);
 
 export default router;

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Common Ground"
+version = "1.0.0"
+id = "artifacts/common-ground"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20200
+
+[services.development]
+run = "pnpm --filter @workspace/common-ground run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/common-ground", "run", "build" ]
+publicDir = "artifacts/common-ground/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20200"
+BASE_PATH = "/"
