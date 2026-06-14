@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { importanceLabel } from "@/lib/issue-meta";
+import { importanceMeta, issueIconById } from "@/lib/issue-meta";
 import { useInvalidateVoterData } from "@/lib/invalidate";
 import { MapPin, RotateCcw } from "lucide-react";
 
@@ -121,6 +121,9 @@ export default function Profile() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Issue priorities</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Drag a slider to change how much an issue counts. Issues regroup by weight after you release.
+          </p>
         </CardHeader>
         <CardContent>
           {stances.length === 0 ? (
@@ -128,20 +131,15 @@ export default function Profile() {
               You haven't built a values profile yet.
             </p>
           ) : (
-            <div className="space-y-6">
-              {stances.map((s) => (
-                <StanceRow
-                  key={s.issueId}
-                  stance={s}
-                  onChange={(importance) =>
-                    updateStance.mutate(
-                      { issueId: s.issueId, data: { importance } },
-                      { onSuccess: () => void invalidate() },
-                    )
-                  }
-                />
-              ))}
-            </div>
+            <PriorityTiers
+              stances={stances}
+              onChange={(issueId, importance) =>
+                updateStance.mutate(
+                  { issueId, data: { importance } },
+                  { onSuccess: () => void invalidate() },
+                )
+              }
+            />
           )}
         </CardContent>
       </Card>
@@ -182,6 +180,62 @@ export default function Profile() {
   );
 }
 
+const TIERS: { tier: 1 | 2 | 3; title: string }[] = [
+  { tier: 3, title: "Top priorities" },
+  { tier: 2, title: "Important" },
+  { tier: 1, title: "Less important" },
+];
+
+function PriorityTiers({
+  stances,
+  onChange,
+}: {
+  stances: IssueStance[];
+  onChange: (issueId: string, importance: number) => void;
+}) {
+  const sorted = [...stances].sort(
+    (a, b) => b.importance - a.importance || a.issueName.localeCompare(b.issueName),
+  );
+
+  const groups = TIERS.map((t) => ({
+    ...t,
+    items: sorted.filter((s) => {
+      if (t.tier === 3) return s.importance >= 3;
+      if (t.tier === 1) return s.importance <= 1;
+      return s.importance === 2;
+    }),
+  })).filter((g) => g.items.length > 0);
+
+  return (
+    <div className="space-y-7">
+      {groups.map((g) => {
+        const meta = importanceMeta(g.tier);
+        return (
+          <section key={g.tier} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className={`text-xs font-semibold uppercase tracking-wide ${meta.text}`}>
+                {g.title}
+              </h3>
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+                {g.items.length}
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {g.items.map((s) => (
+                <StanceRow
+                  key={s.issueId}
+                  stance={s}
+                  onChange={(importance) => onChange(s.issueId, importance)}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function StanceRow({
   stance,
   onChange,
@@ -195,11 +249,22 @@ function StanceRow({
     setValue(stance.importance);
   }, [stance.importance]);
 
+  const meta = importanceMeta(value);
+  const Icon = issueIconById(stance.issueId);
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-medium truncate pr-2 max-w-[60%]">{stance.issueName}</span>
-        <span className="text-sm font-medium text-primary shrink-0">{importanceLabel(value)}</span>
+    <div
+      className={`rounded-lg border border-l-4 ${meta.border} ${meta.rowBg} p-3 transition-colors sm:p-4`}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${meta.chip}`}
+          aria-hidden
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="flex-1 truncate font-medium">{stance.issueName}</span>
+        <span className={`shrink-0 text-xs font-semibold ${meta.text}`}>{meta.label}</span>
       </div>
       <Slider
         min={1}
@@ -208,7 +273,8 @@ function StanceRow({
         value={[value]}
         onValueChange={(v) => setValue(v[0])}
         onValueCommit={(v) => onChange(v[0])}
-        className="py-2"
+        aria-label={`How much ${stance.issueName} matters to you`}
+        className="mt-3"
       />
     </div>
   );
