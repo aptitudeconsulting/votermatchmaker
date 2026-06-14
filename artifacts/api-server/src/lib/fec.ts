@@ -210,10 +210,53 @@ async function fetchCommitteeReceipts(
   return data?.results ?? [];
 }
 
-interface SectorAccum {
+export interface SectorAccum {
   sector: DonorSector;
   total: number;
   count: number;
+}
+
+/**
+ * Pure per-issue reduction: turn classified per-sector dollar accumulators into
+ * signed leans + confidences on each issue's -2..+2 axis. Extracted from
+ * `buildDonorProfile` so the dollar-weighting / lean / confidence-cap /
+ * dominant-sector math is testable without hitting the FEC network.
+ *
+ * For each issue:
+ *  - lean = (Σ direction·dollars / Σ dollars) · 2, so opposing sectors net out by
+ *    dollar weight; rounded to 2 decimals on the -2..+2 axis.
+ *  - confidence = min(0.5, issueTotal / 100000), so it saturates (caps at 0.5)
+ *    around ~$50k of classified money; rounded to 2 decimals.
+ *  - topSectorLabel = label of the highest-dollar sector on the issue.
+ */
+export function aggregateDonorSignals(accums: SectorAccum[]): DonorIssueSignal[] {
+  const byIssue = new Map<string, SectorAccum[]>();
+  for (const a of accums) {
+    const arr = byIssue.get(a.sector.issueId) ?? [];
+    arr.push(a);
+    byIssue.set(a.sector.issueId, arr);
+  }
+
+  const signals: DonorIssueSignal[] = [];
+  for (const [issueId, arr] of byIssue) {
+    const issueTotal = arr.reduce((s, a) => s + a.total, 0);
+    if (!(issueTotal > 0)) continue;
+    // Weighted mean of sector directions in [-1, 1], scaled to the -2..+2 axis.
+    const weightedDir =
+      arr.reduce((s, a) => s + a.sector.direction * a.total, 0) / issueTotal;
+    const lean = Math.round(weightedDir * 2 * 100) / 100;
+    const dominant = [...arr].sort((a, b) => b.total - a.total)[0];
+    // Confidence saturates around ~$50k of classified money on the issue.
+    const confidence = Math.round(Math.min(0.5, issueTotal / 100000) * 100) / 100;
+    signals.push({
+      issueId,
+      lean,
+      confidence,
+      classifiedTotal: Math.round(issueTotal),
+      topSectorLabel: dominant?.sector.label ?? null,
+    });
+  }
+  return signals;
 }
 
 function defaultCycle(): number {
@@ -300,32 +343,7 @@ export async function buildDonorProfile(
     }));
 
   // Per-issue signals: combine sector directions weighted by dollars.
-  const byIssue = new Map<string, SectorAccum[]>();
-  for (const a of accums) {
-    const arr = byIssue.get(a.sector.issueId) ?? [];
-    arr.push(a);
-    byIssue.set(a.sector.issueId, arr);
-  }
-
-  const signals: DonorIssueSignal[] = [];
-  for (const [issueId, arr] of byIssue) {
-    const issueTotal = arr.reduce((s, a) => s + a.total, 0);
-    if (!(issueTotal > 0)) continue;
-    // Weighted mean of sector directions in [-1, 1], scaled to the -2..+2 axis.
-    const weightedDir =
-      arr.reduce((s, a) => s + a.sector.direction * a.total, 0) / issueTotal;
-    const lean = Math.round(weightedDir * 2 * 100) / 100;
-    const dominant = [...arr].sort((a, b) => b.total - a.total)[0];
-    // Confidence saturates around ~$50k of classified money on the issue.
-    const confidence = Math.round(Math.min(0.5, issueTotal / 100000) * 100) / 100;
-    signals.push({
-      issueId,
-      lean,
-      confidence,
-      classifiedTotal: Math.round(issueTotal),
-      topSectorLabel: dominant?.sector.label ?? null,
-    });
-  }
+  const signals = aggregateDonorSignals(accums);
 
   return {
     fecCandidateIds: fecIds,
