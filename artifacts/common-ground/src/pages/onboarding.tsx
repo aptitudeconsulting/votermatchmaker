@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { MapPin, ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { MapPin, ArrowLeft, ArrowRight, Check, Sparkles, AlertCircle } from "lucide-react";
 import neighborhood from "@/assets/neighborhood.webp";
 
 type Phase = "location" | "questions" | "prioritize";
@@ -24,7 +24,12 @@ type Phase = "location" | "questions" | "prioritize";
 export default function Onboarding() {
   const [, navigate] = useLocation();
   const { data: profile } = useGetMyProfile();
-  const { data: questions, isLoading: questionsLoading } = useListQuestions();
+  const {
+    data: questions,
+    isLoading: questionsLoading,
+    isError: questionsError,
+    refetch: refetchQuestions,
+  } = useListQuestions();
   const updateLocation = useUpdateMyLocation();
   const submitAnswers = useSubmitAnswers();
   const updateStance = useUpdateMyStance();
@@ -37,6 +42,7 @@ export default function Onboarding() {
   const [stances, setStances] = useState<IssueStance[]>([]);
   const [priorities, setPriorities] = useState<Set<string>>(new Set());
   const [finishing, setFinishing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const sorted = useMemo(
     () => (questions ? [...questions].sort((a, b) => a.order - b.order) : []),
@@ -54,12 +60,16 @@ export default function Onboarding() {
   }, [profile?.location?.zip]);
 
   function submitLocation() {
+    setError(null);
     updateLocation.mutate(
       { data: { zip: zip.trim() } },
       {
         onSuccess: () => {
           void invalidate();
           setPhase("questions");
+        },
+        onError: () => {
+          setError("We couldn't save your location. Please check your connection and try again.");
         },
       },
     );
@@ -79,6 +89,7 @@ export default function Onboarding() {
   }
 
   function finishQuestions() {
+    setError(null);
     const payload = Object.entries(answers).map(([questionId, value]) => ({
       questionId,
       value,
@@ -90,6 +101,11 @@ export default function Onboarding() {
           void invalidate();
           setStances(prof.stances ?? []);
           setPhase("prioritize");
+        },
+        onError: () => {
+          setError(
+            "We couldn't build your values profile just now. Please tap “See my priorities” again.",
+          );
         },
       },
     );
@@ -168,6 +184,7 @@ export default function Onboarding() {
                 {updateLocation.isPending ? "Saving…" : "Continue"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+              {error && <ErrorNote message={error} />}
             </CardContent>
           </Card>
         </div>
@@ -181,7 +198,19 @@ export default function Onboarding() {
             title="Tell us what you believe"
             subtitle="There are no right answers. Respond honestly — we'll turn this into your values profile."
           />
-          {questionsLoading || !current ? (
+          {questionsError ? (
+            <div className="space-y-4">
+              <ErrorNote message="We couldn't load the questions. Please check your connection and try again." />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void refetchQuestions();
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : questionsLoading || !current ? (
             <div className="space-y-3">
               <Skeleton className="h-6 w-2/3" />
               <Skeleton className="h-32 w-full" />
@@ -250,7 +279,10 @@ export default function Onboarding() {
                 <Button
                   variant="ghost"
                   disabled={qIndex === 0}
-                  onClick={() => setQIndex((i) => Math.max(0, i - 1))}
+                  onClick={() => {
+                    setError(null);
+                    setQIndex((i) => Math.max(0, i - 1));
+                  }}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
@@ -267,6 +299,7 @@ export default function Onboarding() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
+              {error && <ErrorNote message={error} />}
             </div>
           )}
         </div>
@@ -312,6 +345,18 @@ export default function Onboarding() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ErrorNote({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+    >
+      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>{message}</span>
     </div>
   );
 }
