@@ -144,7 +144,7 @@ export default function Onboarding() {
             step={1}
             steps={3}
             title="Where do you vote?"
-            subtitle="We use your ZIP code to find the candidates on your ballot — your representatives in Congress and sample local races."
+            subtitle="We use your ZIP code to find the candidates on your ballot — your representatives and senators in Congress."
           />
           <Card className="overflow-hidden">
             <div className="relative h-32 w-full md:h-40">

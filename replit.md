@@ -42,7 +42,7 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - Issue + question seed data: `artifacts/api-server/src/data/political.ts`
 - Congress.gov sync: `artifacts/api-server/src/scripts/sync.ts`
 - Web pages: `artifacts/common-ground/src/pages/` (incl. public `methodology.tsx` — data sources + how positions/votes/donor/AI signals work, linked from the footer); shared civic UI in `src/components/civic.tsx`; helpers in `src/lib/issue-meta.tsx` and `src/lib/invalidate.ts`
-- `GET /candidates` returns `{ items, total }` (not a bare array) so the browse page can show "Showing X of N" + "Load more"; the page debounces search (300ms) and syncs `level`/`q` to the URL via wouter `useSearchParams` (matches page syncs `level` too). Vote-derived copy is chamber-neutral ("floor votes", not "House floor votes") since senators share the same code path.
+- `GET /candidates` returns `{ items, total }` (not a bare array) so the browse page can show "Showing X of N" + "Load more"; the page debounces search (300ms) and syncs `level`/`q` to the URL via wouter `useSearchParams` (matches page syncs `level` too). Vote-derived copy is chamber-neutral ("floor votes", not "House floor votes") since senators share the same code path. Contract is guarded by `artifacts/api-server/src/routes/candidates.integration.test.ts` (boots the real Express `app` on an ephemeral port, hits `/api/candidates` via `fetch`, asserts `{items,total}` shape + `level`/`q` filters reflected in both items and total); run with `pnpm --filter @workspace/api-server run test`.
 
 ## Architecture decisions
 
