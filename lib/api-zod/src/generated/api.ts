@@ -355,7 +355,18 @@ export const ListMyMatchesResponseItem = zod.object({
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
 })),
   "sharedPriorityCount": zod.number(),
-  "donorTensionCount": zod.number().describe('Number of prioritized issues with a donor tension flag.')
+  "donorTensionCount": zod.number().describe('Number of prioritized issues with a donor tension flag.'),
+  "donorCategories": zod.array(zod.object({
+  "sector": zod.string(),
+  "label": zod.string(),
+  "issueId": zod.string(),
+  "issueName": zod.string(),
+  "direction": zod.number().describe('Sign on the issue\'s internal -2..+2 axis (+1 \/ -1).'),
+  "total": zod.number().describe('Classified dollars attributed to this sector.'),
+  "contributorCount": zod.number()
+})).describe('Top derived \"who funds them\" donor sectors. Empty when no FEC data.'),
+  "donorTensions": zod.array(zod.string()).describe('Names of the voter\'s prioritized issues that carry a donor tension flag.'),
+  "hasDonorData": zod.boolean().describe('True when classified FEC donor data exists for this candidate.')
 })
 export const ListMyMatchesResponse = zod.array(ListMyMatchesResponseItem)
 

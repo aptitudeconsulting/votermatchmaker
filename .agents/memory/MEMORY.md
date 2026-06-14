@@ -8,3 +8,4 @@
 - [Bill provision enrichment](bill-provision-enrichment.md) — CRS summaries lag introduction so enrich OLDEST tracked bills; never persist null-summary rows; separate recordId-keyed table; direction never shown partisan.
 - [Post-merge codegen staleness](post-merge-codegen-staleness.md) — missing @workspace/api-client-react exports after a task merge mean stale generated client; run codegen + typecheck:libs, don't edit app code.
 - [pnpm install reaping](pnpm-install-reaping.md) — backgrounded installs get reaped; run `pnpm install --offline --ignore-scripts` foreground so it finishes in one bash call.
+- [Orval codegen timing](codegen-orval-timing.md) — zod codegen step takes ~115s and harness kills it (-1), wiping api-zod/generated; run orval with a `timeout 115` guard, typecheck separately.

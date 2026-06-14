@@ -7,6 +7,7 @@ import {
   candidatesTable,
   candidatePositionsTable,
   candidateDonorSignalsTable,
+  candidateDonorCategoriesTable,
   candidateRecordsTable,
   candidateRecordEnrichmentTable,
   type Candidate,
@@ -100,6 +101,43 @@ async function donorSignalsByCandidate(
   return map;
 }
 
+interface DonorCategoryOut {
+  sector: string;
+  label: string;
+  issueId: string;
+  issueName: string;
+  direction: number;
+  total: number;
+  contributorCount: number;
+}
+
+async function donorCategoriesByCandidate(
+  candidateIds: string[],
+): Promise<Map<string, DonorCategoryOut[]>> {
+  const map = new Map<string, DonorCategoryOut[]>();
+  if (candidateIds.length === 0) return map;
+  const rows = await db
+    .select()
+    .from(candidateDonorCategoriesTable)
+    .where(inArray(candidateDonorCategoriesTable.candidateId, candidateIds));
+  for (const r of rows) {
+    const arr = map.get(r.candidateId) ?? [];
+    arr.push({
+      sector: r.sector,
+      label: r.label,
+      issueId: r.issueId,
+      issueName: ISSUE_NAME.get(r.issueId) ?? r.issueId,
+      direction: r.direction,
+      total: r.total,
+      contributorCount: r.contributorCount,
+    });
+    map.set(r.candidateId, arr);
+  }
+  // Highest-dollar sectors first, matching the candidate-detail treatment.
+  for (const arr of map.values()) arr.sort((a, b) => b.total - a.total);
+  return map;
+}
+
 router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
   const userId = req.userId!;
   const level =
@@ -123,6 +161,7 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
   const candidateIds = candidates.map((c) => c.id);
   const posMap = await positionsByCandidate(candidateIds);
   const donorMap = await donorSignalsByCandidate(candidateIds);
+  const donorCategoryMap = await donorCategoriesByCandidate(candidateIds);
 
   const results = candidates.map((c) => {
     const result = computeMatch(
@@ -130,6 +169,7 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
       posMap.get(c.id) ?? [],
       donorMap.get(c.id) ?? [],
     );
+    const donorCategories = donorCategoryMap.get(c.id) ?? [];
     return {
       candidate: toCandidate(c),
       score: result.score,
@@ -139,6 +179,13 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
       topDisagreements: result.topDisagreements,
       sharedPriorityCount: result.sharedPriorityCount,
       donorTensionCount: result.donorTensionCount,
+      // Top funding sectors, mirroring the candidate-detail "Who funds them" treatment.
+      donorCategories: donorCategories.slice(0, 3),
+      // Names of the voter's prioritized issues where donor money contradicts the record.
+      donorTensions: result.breakdown
+        .filter((b) => b.donorTension)
+        .map((b) => b.issueName),
+      hasDonorData: donorCategories.length > 0,
     };
   });
 

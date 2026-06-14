@@ -692,7 +692,7 @@ components:
 
     MatchResult:
       type: object
-      required: [candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount, donorTensionCount]
+      required: [candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount, donorTensionCount, donorCategories, donorTensions, hasDonorData]
       properties:
         candidate:
           $ref: "#/components/schemas/Candidate"
@@ -715,6 +715,19 @@ components:
         donorTensionCount:
           type: integer
           description: Number of prioritized issues with a donor tension flag.
+        donorCategories:
+          type: array
+          description: Top derived "who funds them" donor sectors. Empty when no FEC data.
+          items:
+            $ref: "#/components/schemas/DonorCategory"
+        donorTensions:
+          type: array
+          description: Names of the voter's prioritized issues that carry a donor tension flag.
+          items:
+            type: string
+        hasDonorData:
+          type: boolean
+          description: True when classified FEC donor data exists for this candidate.
 
     ProvisionFlag:
       type: object

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Candidate } from './candidate';
+import type { DonorCategory } from './donorCategory';
 import type { MatchIssueBreakdown } from './matchIssueBreakdown';
 
 export interface MatchResult {
@@ -18,4 +19,10 @@ export interface MatchResult {
   sharedPriorityCount: number;
   /** Number of prioritized issues with a donor tension flag. */
   donorTensionCount: number;
+  /** Top derived "who funds them" donor sectors. Empty when no FEC data. */
+  donorCategories: DonorCategory[];
+  /** Names of the voter's prioritized issues that carry a donor tension flag. */
+  donorTensions: string[];
+  /** True when classified FEC donor data exists for this candidate. */
+  hasDonorData: boolean;
 }

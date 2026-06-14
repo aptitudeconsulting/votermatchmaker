@@ -273,6 +273,12 @@ export interface MatchResult {
   sharedPriorityCount: number;
   /** Number of prioritized issues with a donor tension flag. */
   donorTensionCount: number;
+  /** Top derived "who funds them" donor sectors. Empty when no FEC data. */
+  donorCategories: DonorCategory[];
+  /** Names of the voter's prioritized issues that carry a donor tension flag. */
+  donorTensions: string[];
+  /** True when classified FEC donor data exists for this candidate. */
+  hasDonorData: boolean;
 }
 
 export interface ProvisionFlag {

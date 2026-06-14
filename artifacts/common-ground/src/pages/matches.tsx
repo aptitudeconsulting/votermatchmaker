@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScoreRing, DonorTensionBadge } from "@/components/civic";
-import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ScoreRing, DonorTensionBadge, formatDollars } from "@/components/civic";
+import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown, Wallet } from "lucide-react";
 
 const LEVELS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
@@ -108,6 +108,9 @@ function MatchCard({ match }: { match: MatchResult }) {
     topDisagreements,
     sharedPriorityCount,
     donorTensionCount,
+    donorCategories,
+    donorTensions,
+    hasDonorData,
   } = match;
 
   return (
@@ -153,6 +156,13 @@ function MatchCard({ match }: { match: MatchResult }) {
               )}
               {donorTensionCount > 0 && <DonorTensionBadge count={donorTensionCount} />}
             </div>
+
+            {hasDonorData && (
+              <DonorSummary
+                categories={donorCategories}
+                tensions={donorTensions}
+              />
+            )}
           </div>
 
           <ArrowRight className="hidden h-5 w-5 shrink-0 text-muted-foreground sm:block" />
@@ -160,4 +170,60 @@ function MatchCard({ match }: { match: MatchResult }) {
       </Card>
     </Link>
   );
+}
+
+/**
+ * Compact "Who funds them" treatment for the ranked results, mirroring the
+ * candidate-detail donor section: top funding sectors with dollar amounts and
+ * "informs X" labels, per-issue donor tensions, and FEC attribution. Rendered
+ * only when classified FEC data exists, so it degrades silently otherwise.
+ */
+function DonorSummary({
+  categories,
+  tensions,
+}: {
+  categories: MatchResult["donorCategories"];
+  tensions: string[];
+}) {
+  if (categories.length === 0 && tensions.length === 0) return null;
+  return (
+    <div className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-3">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Wallet className="h-3.5 w-3.5" />
+        Who funds them
+      </div>
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <span
+              key={c.sector}
+              className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-0.5 text-xs"
+            >
+              <span className="font-medium">{c.label}</span>
+              <span className="text-muted-foreground">
+                {formatDollars(c.total)} · informs {c.issueName}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+      {tensions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <DonorTensionBadge count={tensions.length} />
+          <span className="text-muted-foreground">on {joinNames(tensions)}</span>
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        Source: FEC. Sectors are inferred from contributor and employer names, not
+        official codes. Donor money never changes a position — it only adjusts
+        confidence and flags tensions.
+      </p>
+    </div>
+  );
+}
+
+function joinNames(names: string[]): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
