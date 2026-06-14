@@ -222,7 +222,7 @@ export function computeMatch(
       summary:
         (cand && !cand.insufficient ? cand.summary : null) ||
         (vote && vote.voteCount > 0
-          ? `Derived from ${vote.voteCount} House floor vote${vote.voteCount === 1 ? "" : "s"} on ${stance.issueName.toLowerCase()}.`
+          ? `Derived from ${vote.voteCount} floor vote${vote.voteCount === 1 ? "" : "s"} on ${stance.issueName.toLowerCase()}.`
           : null),
       voteCount,
       donorTension,

@@ -155,7 +155,7 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
       const summary =
         p?.summary ||
         (vote
-          ? `Position derived from ${vote.voteCount} House floor vote${vote.voteCount === 1 ? "" : "s"} on ${issueName.toLowerCase()}.`
+          ? `Position derived from ${vote.voteCount} floor vote${vote.voteCount === 1 ? "" : "s"} on ${issueName.toLowerCase()}.`
           : "");
       return {
         issueId,

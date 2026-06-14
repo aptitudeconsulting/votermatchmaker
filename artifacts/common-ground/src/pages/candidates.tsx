@@ -51,6 +51,8 @@ export default function Candidates() {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            type="search"
+            aria-label="Search candidates by name or state"
             placeholder="Search by name or state"
             value={q}
             onChange={(e) => setQ(e.target.value)}

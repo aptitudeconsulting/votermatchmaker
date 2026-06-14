@@ -105,7 +105,7 @@ export default function CandidateDetail() {
         <div>
           <h2 className="text-xl font-semibold">Where they stand</h2>
           <p className="text-sm text-muted-foreground">
-            Positions are inferred from actual House floor votes plus sponsored and
+            Positions are inferred from actual floor votes plus sponsored and
             cosponsored legislation — not campaign promises.
           </p>
         </div>
