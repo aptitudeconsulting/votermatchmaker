@@ -148,6 +148,13 @@ export interface Candidate {
   photoUrl?: string | null;
   /** @nullable */
   bioguideId?: string | null;
+  /** True when this seat is contested in the current/upcoming general election. */
+  upForReelection: boolean;
+  /**
+     * The November (even) year this seat is next contested, or null if unknown.
+     * @nullable
+     */
+  electionYear: number | null;
   dataSource: CandidateDataSource;
   isSample: boolean;
 }

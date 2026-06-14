@@ -12,6 +12,7 @@ export const candidatesTable = pgTable("candidates", {
   incumbent: boolean("incumbent").notNull().default(true),
   photoUrl: text("photo_url"),
   bioguideId: text("bioguide_id"),
+  termEnd: text("term_end"),
   dataSource: text("data_source").notNull().default("congress.gov"),
   isSample: boolean("is_sample").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true })

@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Vote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { issueIcon, gradeClasses, alignmentMeta } from "@/lib/issue-meta";
 
@@ -153,6 +153,32 @@ export function DonorTensionBadge({
       {typeof count === "number" && count > 1
         ? `${count} donor tensions`
         : "Donor tension"}
+    </span>
+  );
+}
+
+/**
+ * Highlights candidates whose seat is on the upcoming ballot. Non-partisan,
+ * civic-blue treatment to read as an informational status, not an endorsement.
+ */
+export function ReelectionBadge({
+  electionYear,
+  className,
+}: {
+  electionYear?: number | null;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-400",
+        className,
+      )}
+    >
+      <Vote className="h-3 w-3" />
+      {electionYear
+        ? `Up for re-election in ${electionYear}`
+        : "Up for re-election"}
     </span>
   );
 }

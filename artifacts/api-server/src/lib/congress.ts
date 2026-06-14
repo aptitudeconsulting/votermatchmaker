@@ -96,6 +96,40 @@ export async function fetchAllCurrentMembers(
   return members;
 }
 
+interface LegislatorRecord {
+  id?: { bioguide?: string };
+  terms?: { type?: string; start?: string; end?: string }[];
+}
+
+/**
+ * Fetches the public @unitedstates/congress-legislators "current" dataset and
+ * returns a map of bioguideId → the current term's end date (YYYY-MM-DD).
+ *
+ * Congress.gov itself does not expose a usable term-end / Senate-class signal
+ * (its member terms are split per-Congress and omit endYear for the in-progress
+ * term), so this authoritative dataset is what tells us when each member's seat
+ * is next contested. Degrades to an empty map on any failure.
+ */
+export async function fetchTermEndByBioguide(): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  try {
+    const res = await fetch(
+      "https://unitedstates.github.io/congress-legislators/legislators-current.json",
+    );
+    if (!res.ok) return out;
+    const data = (await res.json()) as LegislatorRecord[];
+    for (const p of data) {
+      const bioguide = p.id?.bioguide;
+      const terms = p.terms ?? [];
+      const last = terms[terms.length - 1];
+      if (bioguide && last?.end) out.set(bioguide, last.end);
+    }
+  } catch {
+    return out;
+  }
+  return out;
+}
+
 export async function fetchMemberBills(
   bioguideId: string,
   kind: "sponsored" | "cosponsored",

@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "seed": "tsx src/scripts/seed.ts",
     "sync": "tsx src/scripts/sync.ts",
+    "sync:terms": "tsx src/scripts/syncTerms.ts",
     "sync:fec": "tsx src/scripts/syncFec.ts",
     "sync:fec:prod": "node --enable-source-maps ./dist/scripts/syncFec.mjs",
     "enrich": "tsx src/scripts/enrichProvisions.ts",

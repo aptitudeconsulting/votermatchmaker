@@ -228,6 +228,8 @@ export const ListCandidatesResponseItem = zod.object({
   "incumbent": zod.boolean(),
   "photoUrl": zod.string().nullish(),
   "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
   "dataSource": zod.enum(['congress.gov', 'sample']),
   "isSample": zod.boolean()
 })
@@ -254,6 +256,8 @@ export const GetCandidateResponse = zod.object({
   "incumbent": zod.boolean(),
   "photoUrl": zod.string().nullish(),
   "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
   "dataSource": zod.enum(['congress.gov', 'sample']),
   "isSample": zod.boolean()
 }),
@@ -322,6 +326,8 @@ export const ListMyMatchesResponseItem = zod.object({
   "incumbent": zod.boolean(),
   "photoUrl": zod.string().nullish(),
   "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
   "dataSource": zod.enum(['congress.gov', 'sample']),
   "isSample": zod.boolean()
 }),
@@ -391,6 +397,8 @@ export const GetMyMatchResponse = zod.object({
   "incumbent": zod.boolean(),
   "photoUrl": zod.string().nullish(),
   "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
   "dataSource": zod.enum(['congress.gov', 'sample']),
   "isSample": zod.boolean()
 }),

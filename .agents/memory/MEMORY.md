@@ -8,4 +8,5 @@
 - [Bill provision enrichment](bill-provision-enrichment.md) — CRS summaries lag introduction so enrich OLDEST tracked bills; never persist null-summary rows; separate recordId-keyed table; direction never shown partisan.
 - [Post-merge codegen staleness](post-merge-codegen-staleness.md) — missing @workspace/api-client-react exports after a task merge mean stale generated client; run codegen + typecheck:libs, don't edit app code.
 - [pnpm install reaping](pnpm-install-reaping.md) — backgrounded installs get reaped; run `pnpm install --offline --ignore-scripts` foreground so it finishes in one bash call.
+- [Re-election / term-end data](reelection-term-data.md) — Congress.gov lacks usable term-end/Senate-class; use congress-legislators dataset; COALESCE term_end on upsert so a fetch outage can't null it.
 - [Orval codegen timing](codegen-orval-timing.md) — zod codegen step takes ~115s and harness kills it (-1), wiping api-zod/generated; run orval with a `timeout 115` guard, typecheck separately.

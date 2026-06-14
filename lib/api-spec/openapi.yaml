@@ -499,7 +499,7 @@ components:
 
     Candidate:
       type: object
-      required: [id, name, level, currentRole, incumbent, dataSource, isSample]
+      required: [id, name, level, currentRole, incumbent, upForReelection, electionYear, dataSource, isSample]
       properties:
         id:
           type: string
@@ -524,6 +524,12 @@ components:
           type: ["string", "null"]
         bioguideId:
           type: ["string", "null"]
+        upForReelection:
+          type: boolean
+          description: True when this seat is contested in the current/upcoming general election.
+        electionYear:
+          type: ["integer", "null"]
+          description: The November (even) year this seat is next contested, or null if unknown.
         dataSource:
           type: string
           enum: [congress.gov, sample]

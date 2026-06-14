@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   db,
   pool,
@@ -10,6 +10,7 @@ import {
 import {
   fetchAllCurrentMembers,
   fetchMemberBills,
+  fetchTermEndByBioguide,
   derivePositions,
   parseMember,
   formatName,
@@ -34,7 +35,10 @@ function stateCodeFor(member: RawMember): {
   return { state: code ?? null, stateName: raw };
 }
 
-async function upsertCandidate(member: RawMember): Promise<boolean> {
+async function upsertCandidate(
+  member: RawMember,
+  termEnd: string | null,
+): Promise<boolean> {
   const { level, district } = parseMember(member);
   if (!level) return false;
   const { state, stateName } = stateCodeFor(member);
@@ -58,6 +62,7 @@ async function upsertCandidate(member: RawMember): Promise<boolean> {
       incumbent: true,
       photoUrl: member.depiction?.imageUrl ?? null,
       bioguideId: member.bioguideId,
+      termEnd,
       dataSource: "congress.gov",
       isSample: false,
     })
@@ -72,6 +77,10 @@ async function upsertCandidate(member: RawMember): Promise<boolean> {
         district,
         currentRole: role,
         photoUrl: member.depiction?.imageUrl ?? null,
+        // Preserve an existing term_end when this run has no value for the
+        // member (e.g. the external dataset fetch failed / had a miss) so a
+        // transient outage can't wipe the re-election signal.
+        termEnd: termEnd ?? sql`${candidatesTable.termEnd}`,
       },
     });
   return true;
@@ -148,10 +157,20 @@ async function main() {
   const members = await fetchAllCurrentMembers(apiKey);
   logger.info(`Fetched ${members.length} members`);
 
+  const termEndByBioguide = await fetchTermEndByBioguide();
+  if (termEndByBioguide.size === 0) {
+    logger.warn(
+      "No term-end dates fetched; preserving existing term_end values (re-election signal unchanged this run).",
+    );
+  } else {
+    logger.info(`Loaded term-end dates for ${termEndByBioguide.size} members`);
+  }
+
   let saved = 0;
   const valid: RawMember[] = [];
   for (const m of members) {
-    if (await upsertCandidate(m)) {
+    const termEnd = termEndByBioguide.get(m.bioguideId) ?? null;
+    if (await upsertCandidate(m, termEnd)) {
       valid.push(m);
       saved++;
     }

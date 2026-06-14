@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScoreRing, DonorTensionBadge, formatDollars } from "@/components/civic";
+import {
+  ScoreRing,
+  DonorTensionBadge,
+  ReelectionBadge,
+  formatDollars,
+} from "@/components/civic";
 import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown, Wallet } from "lucide-react";
 
 const LEVELS: { value: string; label: string }[] = [
@@ -125,6 +130,9 @@ function MatchCard({ match }: { match: MatchResult }) {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold">{candidate.name}</h3>
               {candidate.party && <Badge variant="secondary">{candidate.party}</Badge>}
+              {candidate.upForReelection && (
+                <ReelectionBadge electionYear={candidate.electionYear} />
+              )}
               {candidate.isSample && (
                 <Badge variant="outline" className="text-xs">
                   Sample race
