@@ -21,6 +21,7 @@ export * from './candidateDataSource';
 export * from './candidateDetail';
 export * from './candidateLevel';
 export * from './candidatePosition';
+export * from './donorCategory';
 export * from './healthStatus';
 export * from './issue';
 export * from './issueStance';

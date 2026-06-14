@@ -532,7 +532,7 @@ components:
 
     CandidatePosition:
       type: object
-      required: [issueId, issueName, position, confidence, summary, sourceCount]
+      required: [issueId, issueName, position, confidence, summary, sourceCount, donorTension, donorNote, donorLean]
       properties:
         issueId:
           type: string
@@ -545,6 +545,36 @@ components:
         summary:
           type: string
         sourceCount:
+          type: integer
+        donorTension:
+          type: boolean
+          description: True when classified donor money contradicts this legislation-derived position.
+        donorNote:
+          type: ["string", "null"]
+          description: Neutral, factual one-line explanation of the donor tension.
+        donorLean:
+          type: ["number", "null"]
+          description: Signed donor lean on the internal -2..+2 axis, when donor data exists.
+
+    DonorCategory:
+      type: object
+      required: [sector, label, issueId, issueName, direction, total, contributorCount]
+      properties:
+        sector:
+          type: string
+        label:
+          type: string
+        issueId:
+          type: string
+        issueName:
+          type: string
+        direction:
+          type: integer
+          description: Sign on the issue's internal -2..+2 axis (+1 / -1).
+        total:
+          type: number
+          description: Classified dollars attributed to this sector.
+        contributorCount:
           type: integer
 
     RecordItem:
@@ -575,7 +605,7 @@ components:
 
     CandidateDetail:
       type: object
-      required: [candidate, positions, record, recordCount]
+      required: [candidate, positions, record, recordCount, donorCategories, hasDonorData]
       properties:
         candidate:
           $ref: "#/components/schemas/Candidate"
@@ -589,6 +619,14 @@ components:
             $ref: "#/components/schemas/RecordItem"
         recordCount:
           type: integer
+        donorCategories:
+          type: array
+          description: Derived "who funds them" donor sectors. Empty when no FEC data.
+          items:
+            $ref: "#/components/schemas/DonorCategory"
+        hasDonorData:
+          type: boolean
+          description: True when classified FEC donor data exists for this candidate.
 
     MatchIssueBreakdown:
       type: object
@@ -600,6 +638,9 @@ components:
         - candidatePosition
         - candidateConfidence
         - alignment
+        - donorTension
+        - donorNote
+        - donorLean
       properties:
         issueId:
           type: string
@@ -617,10 +658,19 @@ components:
           type: number
         summary:
           type: ["string", "null"]
+        donorTension:
+          type: boolean
+          description: True when classified donor money contradicts this position.
+        donorNote:
+          type: ["string", "null"]
+          description: Neutral, factual one-line explanation of the donor tension.
+        donorLean:
+          type: ["number", "null"]
+          description: Signed donor lean on the internal -2..+2 axis, when donor data exists.
 
     MatchResult:
       type: object
-      required: [candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount]
+      required: [candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount, donorTensionCount]
       properties:
         candidate:
           $ref: "#/components/schemas/Candidate"
@@ -640,6 +690,9 @@ components:
             $ref: "#/components/schemas/MatchIssueBreakdown"
         sharedPriorityCount:
           type: integer
+        donorTensionCount:
+          type: integer
+          description: Number of prioritized issues with a donor tension flag.
 
     MatchDetail:
       type: object

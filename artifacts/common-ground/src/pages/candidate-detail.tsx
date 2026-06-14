@@ -6,6 +6,7 @@ import {
   type CandidatePosition,
   type RecordItem,
   type MatchIssueBreakdown,
+  type DonorCategory,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { ScoreRing, AlignmentBadge, PositionScale } from "@/components/civic";
+import {
+  ScoreRing,
+  AlignmentBadge,
+  PositionScale,
+  DonorTensionBadge,
+  formatDollars,
+} from "@/components/civic";
 import { confidenceLabel } from "@/lib/issue-meta";
-import { ArrowLeft, ExternalLink, FileText, Info } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileText, Info, Wallet } from "lucide-react";
 
 export default function CandidateDetail() {
   const params = useParams();
@@ -44,7 +51,7 @@ export default function CandidateDetail() {
     );
   }
 
-  const { candidate, positions, record, recordCount } = data;
+  const { candidate, positions, record, recordCount, donorCategories, hasDonorData } = data;
   const initials = candidate.name
     .split(" ")
     .map((p) => p[0])
@@ -104,6 +111,10 @@ export default function CandidateDetail() {
           </div>
         )}
       </section>
+
+      {hasDonorData && (
+        <DonorSection categories={donorCategories} />
+      )}
 
       <section className="space-y-4">
         <div>
@@ -174,10 +185,18 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{item.issueName}</span>
-        <AlignmentBadge alignment={item.alignment} />
+        <div className="flex items-center gap-1.5">
+          {item.donorTension && <DonorTensionBadge />}
+          <AlignmentBadge alignment={item.alignment} />
+        </div>
       </div>
       <PositionScale voterPosition={item.voterPosition} candidatePosition={item.candidatePosition} />
       {item.summary && <p className="text-sm text-muted-foreground">{item.summary}</p>}
+      {item.donorTension && item.donorNote && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {item.donorNote}
+        </p>
+      )}
     </div>
   );
 }
@@ -188,12 +207,20 @@ function PositionRow({ position }: { position: CandidatePosition }) {
       <CardContent className="space-y-2 py-4">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium">{position.issueName}</span>
-          <Badge variant="outline" className="text-xs font-normal">
-            {confidenceLabel(position.confidence)}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            {position.donorTension && <DonorTensionBadge />}
+            <Badge variant="outline" className="text-xs font-normal">
+              {confidenceLabel(position.confidence)}
+            </Badge>
+          </div>
         </div>
         <PositionScale candidatePosition={position.position} />
         <p className="text-sm text-muted-foreground">{position.summary}</p>
+        {position.donorTension && position.donorNote && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            {position.donorNote}
+          </p>
+        )}
         {position.sourceCount > 0 && (
           <p className="text-xs text-muted-foreground">
             From {position.sourceCount} legislative item
@@ -202,6 +229,54 @@ function PositionRow({ position }: { position: CandidatePosition }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DonorSection({ categories }: { categories: DonorCategory[] }) {
+  const total = categories.reduce((s, c) => s + c.total, 0);
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="flex items-center gap-2 text-xl font-semibold">
+          <Wallet className="h-5 w-5 text-muted-foreground" />
+          Who funds them
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Donor categories are derived from FEC campaign-finance filings by matching
+          contributor and employer names — an independent signal from their voting record.
+        </p>
+      </div>
+      <Card>
+        <CardContent className="space-y-3 py-5">
+          {categories.map((c) => {
+            const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
+            return (
+              <div key={c.sector} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-medium">{c.label}</span>
+                  <span className="text-muted-foreground">
+                    {formatDollars(c.total)}
+                    <span className="ml-1.5 text-xs">· informs {c.issueName}</span>
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-foreground/70"
+                    style={{ width: `${Math.max(4, pct)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <p className="pt-1 text-xs text-muted-foreground">
+            Source: FEC (api.open.fec.gov). Categories are inferred from contributor
+            and employer names, not official FEC industry codes, so they are
+            approximate. Donor money never changes a candidate's position — it only
+            adjusts our confidence and flags tensions.
+          </p>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 

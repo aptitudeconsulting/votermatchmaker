@@ -159,6 +159,30 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** True when classified donor money contradicts this legislation-derived position. */
+  donorTension: boolean;
+  /**
+     * Neutral, factual one-line explanation of the donor tension.
+     * @nullable
+     */
+  donorNote: string | null;
+  /**
+     * Signed donor lean on the internal -2..+2 axis, when donor data exists.
+     * @nullable
+     */
+  donorLean: number | null;
+}
+
+export interface DonorCategory {
+  sector: string;
+  label: string;
+  issueId: string;
+  issueName: string;
+  /** Sign on the issue's internal -2..+2 axis (+1 / -1). */
+  direction: number;
+  /** Classified dollars attributed to this sector. */
+  total: number;
+  contributorCount: number;
 }
 
 export type RecordItemKind = typeof RecordItemKind[keyof typeof RecordItemKind];
@@ -195,6 +219,10 @@ export interface CandidateDetail {
   positions: CandidatePosition[];
   record: RecordItem[];
   recordCount: number;
+  /** Derived "who funds them" donor sectors. Empty when no FEC data. */
+  donorCategories: DonorCategory[];
+  /** True when classified FEC donor data exists for this candidate. */
+  hasDonorData: boolean;
 }
 
 export interface MatchIssueBreakdown {
@@ -207,6 +235,18 @@ export interface MatchIssueBreakdown {
   alignment: number;
   /** @nullable */
   summary?: string | null;
+  /** True when classified donor money contradicts this position. */
+  donorTension: boolean;
+  /**
+     * Neutral, factual one-line explanation of the donor tension.
+     * @nullable
+     */
+  donorNote: string | null;
+  /**
+     * Signed donor lean on the internal -2..+2 axis, when donor data exists.
+     * @nullable
+     */
+  donorLean: number | null;
 }
 
 export interface MatchResult {
@@ -217,6 +257,8 @@ export interface MatchResult {
   topAgreements: MatchIssueBreakdown[];
   topDisagreements: MatchIssueBreakdown[];
   sharedPriorityCount: number;
+  /** Number of prioritized issues with a donor tension flag. */
+  donorTensionCount: number;
 }
 
 export interface MatchDetail {

@@ -16,4 +16,6 @@ export interface MatchResult {
   topAgreements: MatchIssueBreakdown[];
   topDisagreements: MatchIssueBreakdown[];
   sharedPriorityCount: number;
+  /** Number of prioritized issues with a donor tension flag. */
+  donorTensionCount: number;
 }

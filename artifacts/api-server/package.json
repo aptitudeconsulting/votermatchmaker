@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "seed": "tsx src/scripts/seed.ts",
     "sync": "tsx src/scripts/sync.ts",
+    "sync:fec": "tsx src/scripts/syncFec.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

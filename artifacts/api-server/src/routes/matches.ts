@@ -6,6 +6,7 @@ import {
   voterStancesTable,
   candidatesTable,
   candidatePositionsTable,
+  candidateDonorSignalsTable,
   type Candidate,
 } from "@workspace/db";
 import { ListMyMatchesResponse, GetMyMatchResponse } from "@workspace/api-zod";
@@ -16,6 +17,7 @@ import {
   buildMatchSummary,
   type VoterStanceInput,
   type CandidatePositionInput,
+  type DonorSignalInput,
 } from "../lib/matching";
 import { ISSUES } from "../data/political";
 
@@ -73,6 +75,29 @@ async function positionsByCandidate(
   return map;
 }
 
+async function donorSignalsByCandidate(
+  candidateIds: string[],
+): Promise<Map<string, DonorSignalInput[]>> {
+  const map = new Map<string, DonorSignalInput[]>();
+  if (candidateIds.length === 0) return map;
+  const rows = await db
+    .select()
+    .from(candidateDonorSignalsTable)
+    .where(inArray(candidateDonorSignalsTable.candidateId, candidateIds));
+  for (const r of rows) {
+    const arr = map.get(r.candidateId) ?? [];
+    arr.push({
+      issueId: r.issueId,
+      lean: r.lean,
+      confidence: r.confidence,
+      classifiedTotal: r.classifiedTotal,
+      topSectorLabel: r.topSectorLabel ?? null,
+    });
+    map.set(r.candidateId, arr);
+  }
+  return map;
+}
+
 router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
   const userId = req.userId!;
   const level =
@@ -93,10 +118,16 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
   }
 
   const candidates = await loadCandidatesForVoter(voter?.state ?? null, level);
-  const posMap = await positionsByCandidate(candidates.map((c) => c.id));
+  const candidateIds = candidates.map((c) => c.id);
+  const posMap = await positionsByCandidate(candidateIds);
+  const donorMap = await donorSignalsByCandidate(candidateIds);
 
   const results = candidates.map((c) => {
-    const result = computeMatch(stances, posMap.get(c.id) ?? []);
+    const result = computeMatch(
+      stances,
+      posMap.get(c.id) ?? [],
+      donorMap.get(c.id) ?? [],
+    );
     return {
       candidate: toCandidate(c),
       score: result.score,
@@ -105,6 +136,7 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
       topAgreements: result.topAgreements,
       topDisagreements: result.topDisagreements,
       sharedPriorityCount: result.sharedPriorityCount,
+      donorTensionCount: result.donorTensionCount,
     };
   });
 
@@ -130,7 +162,12 @@ router.get(
 
     const stances = await loadVoterStances(userId);
     const posMap = await positionsByCandidate([candidateId]);
-    const result = computeMatch(stances, posMap.get(candidateId) ?? []);
+    const donorMap = await donorSignalsByCandidate([candidateId]);
+    const result = computeMatch(
+      stances,
+      posMap.get(candidateId) ?? [],
+      donorMap.get(candidateId) ?? [],
+    );
 
     const data = GetMyMatchResponse.parse({
       candidate: toCandidate(candidate),

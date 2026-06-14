@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { issueIcon, gradeClasses, alignmentMeta } from "@/lib/issue-meta";
 
@@ -127,4 +128,40 @@ export function PositionScale({
       )}
     </div>
   );
+}
+
+/**
+ * Neutral badge flagging that classified donor money points the opposite way from
+ * a candidate's legislation-derived position. Deliberately money-colored amber, not
+ * partisan — it signals "worth a look", never "good"/"bad".
+ */
+export function DonorTensionBadge({
+  count,
+  className,
+}: {
+  count?: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400",
+        className,
+      )}
+    >
+      <AlertTriangle className="h-3 w-3" />
+      {typeof count === "number" && count > 1
+        ? `${count} donor tensions`
+        : "Donor tension"}
+    </span>
+  );
+}
+
+/**
+ * Compact USD formatting for donor dollar totals (e.g. $1.2M, $45K).
+ */
+export function formatDollars(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `$${Math.round(amount / 1_000)}K`;
+  return `$${Math.round(amount)}`;
 }

@@ -13,6 +13,17 @@ export interface CandidatePositionInput {
   summary: string;
 }
 
+/** Donor evidence for one issue. Adjusts confidence and raises tension flags only. */
+export interface DonorSignalInput {
+  issueId: string;
+  /** Signed donor lean on the -2..+2 axis. */
+  lean: number;
+  /** 0..1 confidence from classified dollar volume. */
+  confidence: number;
+  classifiedTotal: number;
+  topSectorLabel: string | null;
+}
+
 export interface IssueBreakdown {
   issueId: string;
   issueName: string;
@@ -22,6 +33,12 @@ export interface IssueBreakdown {
   candidateConfidence: number;
   alignment: number;
   summary: string | null;
+  /** True when donor money clearly contradicts the legislative-derived position. */
+  donorTension: boolean;
+  /** One-line, factual explanation of the tension (record says X, money leans Y). */
+  donorNote: string | null;
+  /** Signed donor lean on the -2..+2 axis, when donor data exists. */
+  donorLean: number | null;
 }
 
 export interface MatchComputation {
@@ -32,6 +49,7 @@ export interface MatchComputation {
   topAgreements: IssueBreakdown[];
   topDisagreements: IssueBreakdown[];
   sharedPriorityCount: number;
+  donorTensionCount: number;
 }
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -58,13 +76,52 @@ export function scoreToGrade(score: number): string {
   return "F";
 }
 
+/**
+ * Adjust a position's confidence using donor evidence. Donor money that agrees in
+ * SIGN with the candidate's legislation-derived position modestly raises
+ * confidence (so the issue weighs a bit more); money that points the opposite way
+ * lowers confidence (a money-muddied position weighs less) and raises a tension
+ * flag. Positions themselves are never moved.
+ */
+function applyDonorEvidence(
+  candidatePosition: number,
+  baseConfidence: number,
+  donor: DonorSignalInput | undefined,
+  issueName: string,
+): { confidence: number; donorTension: boolean; donorNote: string | null; donorLean: number | null } {
+  if (!donor || !(donor.classifiedTotal > 0) || donor.confidence <= 0) {
+    return { confidence: baseConfidence, donorTension: false, donorNote: null, donorLean: null };
+  }
+  const posSign = Math.sign(candidatePosition);
+  const donorSign = Math.sign(donor.lean);
+  // Only meaningful when both sides take a clear, opposite-or-aligned direction.
+  if (posSign === 0 || donorSign === 0 || Math.abs(donor.lean) < 0.3) {
+    return { confidence: baseConfidence, donorTension: false, donorNote: null, donorLean: donor.lean };
+  }
+
+  if (donorSign === posSign) {
+    // Confirming money: nudge confidence up, capped at 1.
+    const confidence = Math.min(1, baseConfidence + donor.confidence * 0.4);
+    return { confidence, donorTension: false, donorNote: null, donorLean: donor.lean };
+  }
+
+  // Contradicting money: discount confidence and flag a neutral tension.
+  const confidence = Math.max(0.05, baseConfidence * (1 - donor.confidence));
+  const dollars = `$${Math.round(donor.classifiedTotal).toLocaleString("en-US")}`;
+  const sector = donor.topSectorLabel ?? "their largest classified donors";
+  const note = `Their record leans one way on ${issueName.toLowerCase()}, but ${dollars} in classified donations (led by ${sector}) leans the other way.`;
+  return { confidence, donorTension: true, donorNote: note, donorLean: donor.lean };
+}
+
 export function computeMatch(
   voterStances: VoterStanceInput[],
   candidatePositions: CandidatePositionInput[],
+  donorSignals: DonorSignalInput[] = [],
 ): MatchComputation {
   const positionByIssue = new Map(
     candidatePositions.map((p) => [p.issueId, p]),
   );
+  const donorByIssue = new Map(donorSignals.map((d) => [d.issueId, d]));
 
   const breakdown: IssueBreakdown[] = [];
   let weightedAlignSum = 0;
@@ -79,13 +136,17 @@ export function computeMatch(
     const cand = positionByIssue.get(stance.issueId);
     if (!cand) continue;
 
+    const donor = donorByIssue.get(stance.issueId);
+    const { confidence: effConfidence, donorTension, donorNote, donorLean } =
+      applyDonorEvidence(cand.position, cand.confidence, donor, stance.issueName);
+
     const alignment = signedAlignment(stance.position, cand.position);
     const align01 = (alignment + 1) / 2; // 0..1
-    const weight = stance.importance * cand.confidence;
+    const weight = stance.importance * effConfidence;
 
     weightedAlignSum += weight * align01;
     weightSum += weight;
-    coveredImportance += stance.importance * cand.confidence;
+    coveredImportance += stance.importance * effConfidence;
 
     breakdown.push({
       issueId: stance.issueId,
@@ -93,9 +154,12 @@ export function computeMatch(
       voterPosition: stance.position,
       voterImportance: stance.importance,
       candidatePosition: cand.position,
-      candidateConfidence: cand.confidence,
+      candidateConfidence: effConfidence,
       alignment,
       summary: cand.summary || null,
+      donorTension,
+      donorNote,
+      donorLean,
     });
   }
 
@@ -115,6 +179,8 @@ export function computeMatch(
     (b) => b.voterImportance >= 3 && b.alignment >= 0.5,
   ).length;
 
+  const donorTensionCount = breakdown.filter((b) => b.donorTension).length;
+
   return {
     score: Math.round(score),
     grade: scoreToGrade(score),
@@ -126,6 +192,7 @@ export function computeMatch(
     topAgreements,
     topDisagreements,
     sharedPriorityCount,
+    donorTensionCount,
   };
 }
 

@@ -261,7 +261,10 @@ export const GetCandidateResponse = zod.object({
   "position": zod.number(),
   "confidence": zod.number(),
   "summary": zod.string(),
-  "sourceCount": zod.number()
+  "sourceCount": zod.number(),
+  "donorTension": zod.boolean().describe('True when classified donor money contradicts this legislation-derived position.'),
+  "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
+  "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
 })),
   "record": zod.array(zod.object({
   "id": zod.string(),
@@ -275,7 +278,17 @@ export const GetCandidateResponse = zod.object({
   "url": zod.string().nullish(),
   "summary": zod.string().nullish()
 })),
-  "recordCount": zod.number()
+  "recordCount": zod.number(),
+  "donorCategories": zod.array(zod.object({
+  "sector": zod.string(),
+  "label": zod.string(),
+  "issueId": zod.string(),
+  "issueName": zod.string(),
+  "direction": zod.number().describe('Sign on the issue\'s internal -2..+2 axis (+1 \/ -1).'),
+  "total": zod.number().describe('Classified dollars attributed to this sector.'),
+  "contributorCount": zod.number()
+})).describe('Derived \"who funds them\" donor sectors. Empty when no FEC data.'),
+  "hasDonorData": zod.boolean().describe('True when classified FEC donor data exists for this candidate.')
 })
 
 
@@ -314,7 +327,10 @@ export const ListMyMatchesResponseItem = zod.object({
   "candidatePosition": zod.number(),
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
-  "summary": zod.string().nullish()
+  "summary": zod.string().nullish(),
+  "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
+  "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
+  "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
 })),
   "topDisagreements": zod.array(zod.object({
   "issueId": zod.string(),
@@ -324,9 +340,13 @@ export const ListMyMatchesResponseItem = zod.object({
   "candidatePosition": zod.number(),
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
-  "summary": zod.string().nullish()
+  "summary": zod.string().nullish(),
+  "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
+  "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
+  "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
 })),
-  "sharedPriorityCount": zod.number()
+  "sharedPriorityCount": zod.number(),
+  "donorTensionCount": zod.number().describe('Number of prioritized issues with a donor tension flag.')
 })
 export const ListMyMatchesResponse = zod.array(ListMyMatchesResponseItem)
 
@@ -366,7 +386,10 @@ export const GetMyMatchResponse = zod.object({
   "candidatePosition": zod.number(),
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
-  "summary": zod.string().nullish()
+  "summary": zod.string().nullish(),
+  "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
+  "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
+  "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
 }))
 })
 

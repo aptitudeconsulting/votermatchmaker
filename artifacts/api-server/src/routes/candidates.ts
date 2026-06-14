@@ -5,6 +5,8 @@ import {
   candidatesTable,
   candidatePositionsTable,
   candidateRecordsTable,
+  candidateDonorCategoriesTable,
+  candidateDonorSignalsTable,
 } from "@workspace/db";
 import { ListCandidatesResponse, GetCandidateResponse } from "@workspace/api-zod";
 import { toCandidate } from "../lib/serialize";
@@ -64,19 +66,56 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
     .where(eq(candidateRecordsTable.candidateId, id))
     .orderBy(desc(candidateRecordsTable.date));
 
+  const donorCategories = await db
+    .select()
+    .from(candidateDonorCategoriesTable)
+    .where(eq(candidateDonorCategoriesTable.candidateId, id))
+    .orderBy(desc(candidateDonorCategoriesTable.total));
+
+  const donorSignals = await db
+    .select()
+    .from(candidateDonorSignalsTable)
+    .where(eq(candidateDonorSignalsTable.candidateId, id));
+  const signalByIssue = new Map(donorSignals.map((s) => [s.issueId, s]));
+
+  // A position carries a tension flag when classified donor money clearly points
+  // the opposite way from the legislation-derived position. Positions never move.
+  const positionTension = (p: (typeof positions)[number]) => {
+    const sig = signalByIssue.get(p.issueId);
+    if (!sig || !(sig.classifiedTotal > 0) || Math.abs(sig.lean) < 0.3) {
+      return { donorTension: false, donorNote: null as string | null, donorLean: sig?.lean ?? null };
+    }
+    const posSign = Math.sign(p.position);
+    const donorSign = Math.sign(sig.lean);
+    if (posSign === 0 || donorSign === 0 || donorSign === posSign) {
+      return { donorTension: false, donorNote: null as string | null, donorLean: sig.lean };
+    }
+    const dollars = `$${Math.round(sig.classifiedTotal).toLocaleString("en-US")}`;
+    const sector = sig.topSectorLabel ?? "their largest classified donors";
+    const issueName = ISSUE_NAME.get(p.issueId) ?? p.issueId;
+    const note = `Their record leans one way on ${issueName.toLowerCase()}, but ${dollars} in classified donations (led by ${sector}) leans the other way.`;
+    return { donorTension: true, donorNote: note, donorLean: sig.lean };
+  };
+
   const data = GetCandidateResponse.parse({
     candidate: toCandidate(candidate),
     positions: positions
       .filter((p) => p.sourceCount > 0)
       .sort((a, b) => b.sourceCount - a.sourceCount)
-      .map((p) => ({
-        issueId: p.issueId,
-        issueName: ISSUE_NAME.get(p.issueId) ?? p.issueId,
-        position: p.position,
-        confidence: p.confidence,
-        summary: p.summary,
-        sourceCount: p.sourceCount,
-      })),
+      .map((p) => {
+        const t = positionTension(p);
+        return {
+          issueId: p.issueId,
+          issueName: ISSUE_NAME.get(p.issueId) ?? p.issueId,
+          position: p.position,
+          confidence: p.confidence,
+          summary: p.summary,
+          sourceCount: p.sourceCount,
+          donorTension: t.donorTension,
+          donorNote: t.donorNote,
+          donorLean: t.donorLean,
+        };
+      }),
     record: records.map((r) => ({
       id: r.id,
       title: r.title,
@@ -90,6 +129,16 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
       summary: r.summary ?? null,
     })),
     recordCount: records.length,
+    donorCategories: donorCategories.map((d) => ({
+      sector: d.sector,
+      label: d.label,
+      issueId: d.issueId,
+      issueName: ISSUE_NAME.get(d.issueId) ?? d.issueId,
+      direction: d.direction,
+      total: d.total,
+      contributorCount: d.contributorCount,
+    })),
+    hasDonorData: donorCategories.length > 0,
   });
   res.json(data);
 });

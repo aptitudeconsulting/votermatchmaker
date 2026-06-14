@@ -7,6 +7,7 @@
  */
 import type { Candidate } from './candidate';
 import type { CandidatePosition } from './candidatePosition';
+import type { DonorCategory } from './donorCategory';
 import type { RecordItem } from './recordItem';
 
 export interface CandidateDetail {
@@ -14,4 +15,8 @@ export interface CandidateDetail {
   positions: CandidatePosition[];
   record: RecordItem[];
   recordCount: number;
+  /** Derived "who funds them" donor sectors. Empty when no FEC data. */
+  donorCategories: DonorCategory[];
+  /** True when classified FEC donor data exists for this candidate. */
+  hasDonorData: boolean;
 }

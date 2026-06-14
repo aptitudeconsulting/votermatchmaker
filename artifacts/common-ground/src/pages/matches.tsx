@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScoreRing } from "@/components/civic";
+import { ScoreRing, DonorTensionBadge } from "@/components/civic";
 import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown } from "lucide-react";
 
 const LEVELS: { value: string; label: string }[] = [
@@ -99,8 +99,16 @@ export default function Matches() {
 }
 
 function MatchCard({ match }: { match: MatchResult }) {
-  const { candidate, score, grade, summary, topAgreements, topDisagreements, sharedPriorityCount } =
-    match;
+  const {
+    candidate,
+    score,
+    grade,
+    summary,
+    topAgreements,
+    topDisagreements,
+    sharedPriorityCount,
+    donorTensionCount,
+  } = match;
 
   return (
     <Link href={`/candidates/${candidate.id}`}>
@@ -143,6 +151,7 @@ function MatchCard({ match }: { match: MatchResult }) {
                   {sharedPriorityCount === 1 ? "priority" : "priorities"}
                 </span>
               )}
+              {donorTensionCount > 0 && <DonorTensionBadge count={donorTensionCount} />}
             </div>
           </div>
 

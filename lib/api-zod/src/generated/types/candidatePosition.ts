@@ -13,4 +13,16 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** True when classified donor money contradicts this legislation-derived position. */
+  donorTension: boolean;
+  /**
+     * Neutral, factual one-line explanation of the donor tension.
+     * @nullable
+     */
+  donorNote: string | null;
+  /**
+     * Signed donor lean on the internal -2..+2 axis, when donor data exists.
+     * @nullable
+     */
+  donorLean: number | null;
 }

@@ -10,10 +10,11 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - `pnpm --filter @workspace/common-ground run dev` — run the web app (Vite)
 - `pnpm --filter @workspace/api-server run seed` — seed issues, questions, and sample local candidates
 - `pnpm --filter @workspace/api-server run sync` — pull current members of Congress + their legislative records from Congress.gov (long-running; run as a workflow, not via bash, or it gets reaped)
+- `pnpm --filter @workspace/api-server run sync:fec` — pull FEC campaign-finance donor signals for federal candidates (run as the "FEC Sync" workflow; supports `FEC_SYNC_LIMIT` for resumable batches; degrades silently with no `FEC_API_KEY`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); optional `GOOGLE_CIVIC_API_KEY` for live ballot measures
+- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); optional `GOOGLE_CIVIC_API_KEY` for live ballot measures, optional `FEC_API_KEY` for donor signals
 - Public mirror of all project files: https://github.com/aptitudeconsulting/votermatchmaker (push with a token that has Contents:write — see memory)
 
 ## Stack
@@ -26,7 +27,8 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 
 ## Where things live
 
-- DB schema: `lib/db/src/schema.ts` (tables: candidates, candidate_positions, candidate_records, issues, questions, voters, voter_answers, voter_stances, sync_meta)
+- DB schema: `lib/db/src/schema/*.ts` (tables: candidates, candidate_positions, candidate_records, candidate_donor_categories, candidate_donor_signals, issues, questions, voters, voter_answers, voter_stances, sync_meta)
+- FEC donor signals: classification dict in `artifacts/api-server/src/data/donors.ts`; FEC client + crosswalk + `buildDonorProfile` in `src/lib/fec.ts`; sync in `src/scripts/syncFec.ts`
 - API contract (source of truth): `lib/api-spec/` → generated hooks/types in `lib/api-client-react/src/generated/`
 - API routes: `artifacts/api-server/src/routes/` (candidates, matches, profile, issues, questions, stats)
 - Issue + question seed data: `artifacts/api-server/src/data/political.ts`
@@ -39,6 +41,7 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - Candidate positions are *derived* from sponsored/cosponsored legislation (policyArea → issue mapping), not from campaign statements; each position carries a confidence based on evidence volume.
 - Candidate id format is `congress-{bioguideId}` for real members; sample local races use seeded ids.
 - Generated mutation hooks do NOT invalidate queries — `useInvalidateVoterData()` (`src/lib/invalidate.ts`) invalidates all `/api/me/*` queries after profile-changing mutations.
+- FEC donor data is a SECOND, independent signal: it never moves a position (positions stay legislation-derived). Donor money only (a) raises/lowers a position's match *confidence* when it agrees/contradicts in sign, and (b) raises a neutral "donor tension" flag. Sectors are *derived* from contributor/employer name keywords (the FEC has no industry codes), so they are approximate and surfaced with FEC attribution. Federal candidates only; everything degrades silently with no FEC key / crosswalk miss / no classifiable money.
 
 ## Product
 
@@ -50,6 +53,7 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 
 - The `sync` script makes ~1000+ sequential Congress.gov calls and runs for several minutes — run it as a workflow. Background bash processes get reaped when the tool call returns, even with `setsid`/`nohup`.
 - The api-server `dev` script builds once with no watch — restart the workflow after server code changes.
+- FEC `sync:fec` resolves a member's authorized committees (designation P/A), then classifies top committee receipts + itemized individuals by employer. Itemized individuals are dominated by noise employers (NOT EMPLOYED/RETIRED/SELF) — they must be filtered. Conduits (ActBlue/WinRed) and the member's own committees are excluded from the contributor side. Run it as the "FEC Sync" workflow (long-running; ~1-3s/candidate).
 - Do not change the OpenAPI `info.title`; it controls generated filenames.
 
 ## User preferences
