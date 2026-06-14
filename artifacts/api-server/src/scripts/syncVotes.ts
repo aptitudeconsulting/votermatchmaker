@@ -16,6 +16,7 @@ import {
 } from "../lib/congress";
 import {
   isSubstantivePassageVote,
+  isSubstantiveLegislationType,
   aggregateVoteSignals,
   type VoteEvent,
 } from "../lib/votes";
@@ -106,6 +107,12 @@ async function main() {
     for (const v of votes) {
       if (limit && scored.length >= limit) break;
       if (!v.legislationType || !v.legislationNumber) continue;
+      // Only count votes on legislation that can become law (bills + joint
+      // resolutions). Simple/concurrent resolutions (H Res, H Con Res, …) are
+      // either procedural rule-adoption votes or non-binding messaging — they
+      // would otherwise pass the "agree to the resolution" question filter and
+      // a rule's title (which quotes the bills it queues) would map to an issue.
+      if (!isSubstantiveLegislationType(v.legislationType)) continue;
       // voteQuestion lives only in the per-roll detail endpoint.
       const detail = await fetchHouseVoteDetail(
         congress,

@@ -106,8 +106,8 @@ export default function CandidateDetail() {
         <div>
           <h2 className="text-xl font-semibold">Where they stand</h2>
           <p className="text-sm text-muted-foreground">
-            Positions are inferred from sponsored and cosponsored legislation — not campaign
-            promises.
+            Positions are inferred from actual House floor votes plus sponsored and
+            cosponsored legislation — not campaign promises.
           </p>
         </div>
         {positions.length === 0 ? (
@@ -117,7 +117,7 @@ export default function CandidateDetail() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {positions.map((p) => (
               <PositionRow key={p.issueId} position={p} />
             ))}
@@ -191,11 +191,7 @@ function MatchScorecard({ candidateId }: { candidateId: string }) {
           </div>
         </div>
         <Separator />
-        <div className="space-y-4">
-          {data.breakdown.map((b) => (
-            <BreakdownRow key={b.issueId} item={b} />
-          ))}
-        </div>
+        <IssueBreakdown items={data.breakdown} />
         {data.provisionFlags && data.provisionFlags.length > 0 && (
           <>
             <Separator />
@@ -274,20 +270,65 @@ function ProvisionFlagRow({ flag }: { flag: ProvisionFlag }) {
   );
 }
 
+const TOP_ISSUES = 6;
+
+/**
+ * Renders the per-issue match breakdown as a compact two-column grid. Issues are
+ * already returned strongest-first, so the lower-priority tail is collapsed
+ * behind a toggle to keep the scorecard scannable instead of one long column.
+ */
+function IssueBreakdown({ items }: { items: MatchIssueBreakdown[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? items : items.slice(0, TOP_ISSUES);
+  const hidden = items.length - shown.length;
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {shown.map((b) => (
+          <BreakdownRow key={b.issueId} item={b} />
+        ))}
+      </div>
+      {items.length > TOP_ISSUES && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "Show fewer issues" : `Show ${hidden} more issue${hidden === 1 ? "" : "s"}`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function VoteEvidenceLine({ voteCount }: { voteCount?: number | null }) {
+  if (!voteCount || voteCount <= 0) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Vote className="h-3.5 w-3.5 shrink-0" />
+      Reflects {voteCount} floor vote{voteCount === 1 ? "" : "s"}
+    </p>
+  );
+}
+
 function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{item.issueName}</span>
-        <div className="flex items-center gap-1.5">
-          {item.donorTension && <DonorTensionBadge />}
-          <AlignmentBadge alignment={item.alignment} />
-        </div>
+    <div className="flex h-full flex-col gap-2 rounded-lg border bg-card p-3">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-sm font-medium leading-tight">{item.issueName}</span>
+        <AlignmentBadge alignment={item.alignment} />
       </div>
       <PositionScale voterPosition={item.voterPosition} candidatePosition={item.candidatePosition} />
-      {item.summary && <p className="text-sm text-muted-foreground">{item.summary}</p>}
+      {item.summary && (
+        <p className="line-clamp-2 text-xs text-muted-foreground">{item.summary}</p>
+      )}
+      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+        <VoteEvidenceLine voteCount={item.voteCount} />
+        {item.donorTension && <DonorTensionBadge />}
+      </div>
       {item.donorTension && item.donorNote && (
-        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400">
           {item.donorNote}
         </p>
       )}
@@ -298,10 +339,10 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
 function PositionRow({ position }: { position: CandidatePosition }) {
   return (
     <Card>
-      <CardContent className="space-y-2 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">{position.issueName}</span>
-          <div className="flex items-center gap-1.5">
+      <CardContent className="flex h-full flex-col gap-2 py-4">
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-medium leading-tight">{position.issueName}</span>
+          <div className="flex shrink-0 items-center gap-1.5">
             {position.donorTension && <DonorTensionBadge />}
             <Badge variant="outline" className="text-xs font-normal">
               {confidenceLabel(position.confidence)}
@@ -315,14 +356,74 @@ function PositionRow({ position }: { position: CandidatePosition }) {
             {position.donorNote}
           </p>
         )}
-        {position.sourceCount > 0 && (
-          <p className="text-xs text-muted-foreground">
-            From {position.sourceCount} legislative item
-            {position.sourceCount === 1 ? "" : "s"}.
-          </p>
+        {position.voteExamples && position.voteExamples.length > 0 && (
+          <VoteExamples examples={position.voteExamples} />
         )}
+        <p className="mt-auto pt-1 text-xs text-muted-foreground">
+          {[
+            position.voteCount > 0
+              ? `${position.voteCount} floor vote${position.voteCount === 1 ? "" : "s"}`
+              : null,
+            position.sourceCount > 0
+              ? `${position.sourceCount} sponsored item${position.sourceCount === 1 ? "" : "s"}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
       </CardContent>
     </Card>
+  );
+}
+
+/** A short list of illustrative roll-call votes behind a vote-derived position. */
+function VoteExamples({ examples }: { examples: VoteExample[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? examples : examples.slice(0, 2);
+  return (
+    <div className="space-y-1.5">
+      {shown.map((ex, i) => (
+        <div
+          key={i}
+          className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs"
+        >
+          <Vote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <span
+              className={`mr-1.5 font-medium ${
+                ex.aligns
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : "text-rose-700 dark:text-rose-400"
+              }`}
+            >
+              {ex.voteCast}
+            </span>
+            {ex.url ? (
+              <a
+                href={ex.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                {ex.billNumber}
+              </a>
+            ) : (
+              <span>{ex.billNumber}</span>
+            )}
+            <span className="text-muted-foreground"> — {ex.title}</span>
+          </div>
+        </div>
+      ))}
+      {examples.length > 2 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs font-medium text-muted-foreground underline hover:text-foreground"
+        >
+          {expanded ? "Show fewer votes" : `Show ${examples.length - 2} more vote${examples.length - 2 === 1 ? "" : "s"}`}
+        </button>
+      )}
+    </div>
   );
 }
 

@@ -17,6 +17,25 @@ export function isSubstantivePassageVote(question: string | undefined): boolean 
   );
 }
 
+/**
+ * Legislation that can actually become law: bills (HR/S) and joint resolutions
+ * (HJRES/SJRES). Simple and concurrent resolutions (HRES/HCONRES/SRES/SCONRES)
+ * are excluded — they are either procedural rule-adoption votes or non-binding
+ * messaging, and a rule's title (which quotes the bills it queues for debate)
+ * would otherwise be mis-mapped to an issue and counted as a real policy vote.
+ */
+export function isSubstantiveLegislationType(
+  type: string | null | undefined,
+): boolean {
+  if (!type) return false;
+  return (
+    type.toUpperCase() === "HR" ||
+    type.toUpperCase() === "S" ||
+    type.toUpperCase() === "HJRES" ||
+    type.toUpperCase() === "SJRES"
+  );
+}
+
 /** A single member's recorded vote on one issue-tagged, directional bill. */
 export interface VoteEvent {
   candidateId: string;

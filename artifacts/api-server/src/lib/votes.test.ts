@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   isSubstantivePassageVote,
+  isSubstantiveLegislationType,
   voteContribution,
   aggregateVoteSignals,
   type VoteEvent,
@@ -22,6 +23,25 @@ describe("isSubstantivePassageVote", () => {
     expect(isSubstantivePassageVote("On Approving the Journal")).toBe(false);
     expect(isSubstantivePassageVote(undefined)).toBe(false);
     expect(isSubstantivePassageVote("Quorum Call")).toBe(false);
+  });
+});
+
+describe("isSubstantiveLegislationType", () => {
+  it("accepts bills and joint resolutions (can become law)", () => {
+    expect(isSubstantiveLegislationType("HR")).toBe(true);
+    expect(isSubstantiveLegislationType("S")).toBe(true);
+    expect(isSubstantiveLegislationType("HJRES")).toBe(true);
+    expect(isSubstantiveLegislationType("SJRES")).toBe(true);
+    expect(isSubstantiveLegislationType("hr")).toBe(true);
+  });
+
+  it("rejects simple/concurrent resolutions (rule-adoption + messaging)", () => {
+    expect(isSubstantiveLegislationType("HRES")).toBe(false);
+    expect(isSubstantiveLegislationType("HCONRES")).toBe(false);
+    expect(isSubstantiveLegislationType("SRES")).toBe(false);
+    expect(isSubstantiveLegislationType("SCONRES")).toBe(false);
+    expect(isSubstantiveLegislationType(null)).toBe(false);
+    expect(isSubstantiveLegislationType(undefined)).toBe(false);
   });
 });
 
