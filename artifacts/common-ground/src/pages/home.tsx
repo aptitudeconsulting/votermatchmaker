@@ -1,5 +1,6 @@
 import { useGetStatsOverview } from "@workspace/api-client-react";
 import { Link } from "wouter";
+import { Show } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -44,16 +45,30 @@ export default function Home() {
               by their actual votes, not their slogans.
             </p>
             <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                asChild
-                size="lg"
-                className="text-lg px-8 py-6 rounded-full hover-elevate"
-              >
-                <Link href="/sign-up">
-                  Find Your Matches
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
+              <Show when="signed-out">
+                <Button
+                  asChild
+                  size="lg"
+                  className="text-lg px-8 py-6 rounded-full hover-elevate"
+                >
+                  <Link href="/sign-up">
+                    Find Your Matches
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </Show>
+              <Show when="signed-in">
+                <Button
+                  asChild
+                  size="lg"
+                  className="text-lg px-8 py-6 rounded-full hover-elevate"
+                >
+                  <Link href="/matches">
+                    Go to Your Matches
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </Show>
               <Button
                 asChild
                 variant="outline"
@@ -174,17 +189,32 @@ export default function Home() {
             Build your profile in a few minutes and see your matches — free, and
             without the spin.
           </p>
-          <Button
-            asChild
-            size="lg"
-            variant="secondary"
-            className="text-lg px-8 py-6 rounded-full hover-elevate font-bold"
-          >
-            <Link href="/sign-up">
-              Start Your Profile
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+          <Show when="signed-out">
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8 py-6 rounded-full hover-elevate font-bold"
+            >
+              <Link href="/sign-up">
+                Start Your Profile
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </Show>
+          <Show when="signed-in">
+            <Button
+              asChild
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8 py-6 rounded-full hover-elevate font-bold"
+            >
+              <Link href="/matches">
+                Go to Your Matches
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </Show>
         </div>
       </section>
     </div>
