@@ -536,9 +536,28 @@ components:
         isSample:
           type: boolean
 
+    VoteExample:
+      type: object
+      required: [billNumber, title, url, voteCast, date, aligns]
+      properties:
+        billNumber:
+          type: string
+        title:
+          type: string
+        url:
+          type: ["string", "null"]
+        voteCast:
+          type: string
+          description: The member's recorded vote, e.g. "Yea" or "Nay".
+        date:
+          type: ["string", "null"]
+        aligns:
+          type: boolean
+          description: True when this vote pushed toward the issue's "+" pole.
+
     CandidatePosition:
       type: object
-      required: [issueId, issueName, position, confidence, summary, sourceCount, donorTension, donorNote, donorLean]
+      required: [issueId, issueName, position, confidence, summary, sourceCount, voteCount, voteShare, voteExamples, donorTension, donorNote, donorLean]
       properties:
         issueId:
           type: string
@@ -552,6 +571,17 @@ components:
           type: string
         sourceCount:
           type: integer
+        voteCount:
+          type: integer
+          description: Number of actual House roll-call votes behind this position (0 when none).
+        voteShare:
+          type: ["number", "null"]
+          description: Share (0..1) of those votes that fell in the majority direction, or null when no votes.
+        voteExamples:
+          type: array
+          description: A few illustrative floor votes behind a vote-derived position. Empty when none.
+          items:
+            $ref: "#/components/schemas/VoteExample"
         donorTension:
           type: boolean
           description: True when classified donor money contradicts this legislation-derived position.
@@ -666,6 +696,7 @@ components:
         - candidatePosition
         - candidateConfidence
         - alignment
+        - voteCount
         - donorTension
         - donorNote
         - donorLean
@@ -686,6 +717,9 @@ components:
           type: number
         summary:
           type: ["string", "null"]
+        voteCount:
+          type: integer
+          description: Number of actual House roll-call votes behind the candidate position (0 when none).
         donorTension:
           type: boolean
           description: True when classified donor money contradicts this position.

@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   applyDonorEvidence,
+  applyVoteEvidence,
   computeMatch,
   type DonorSignalInput,
+  type VoteSignalInput,
   type VoterStanceInput,
   type CandidatePositionInput,
 } from "./matching";
@@ -195,5 +197,62 @@ describe("computeMatch donor invariants", () => {
     expect(result.breakdown[0].donorTension).toBe(false);
     expect(result.breakdown[0].donorLean).toBeNull();
     expect(result.donorTensionCount).toBe(0);
+  });
+});
+
+function vote(overrides: Partial<VoteSignalInput> = {}): VoteSignalInput {
+  return { issueId: "climate", position: -2, voteCount: 6, ...overrides };
+}
+
+describe("applyVoteEvidence", () => {
+  it("returns the base position unchanged when there are no votes", () => {
+    const r = applyVoteEvidence(1.5, 0.4, undefined);
+    expect(r.position).toBe(1.5);
+    expect(r.confidence).toBe(0.4);
+    expect(r.voteCount).toBe(0);
+  });
+
+  it("moves the position toward the voting record and raises confidence", () => {
+    // base says +2, but the actual record (6 votes) says -2.
+    const r = applyVoteEvidence(2, 0.4, vote({ position: -2, voteCount: 6 }));
+    // w = min(0.7, 6*0.12) = 0.7 → 0.7*-2 + 0.3*2 = -0.8
+    expect(r.position).toBeCloseTo(-0.8, 5);
+    expect(r.confidence).toBeCloseTo(0.4 + 0.24, 5); // +min(0.35, 6*0.04)=+0.24
+    expect(r.voteCount).toBe(6);
+  });
+
+  it("caps the vote weight at 0.7 and confidence boost at 0.35", () => {
+    const r = applyVoteEvidence(2, 0.8, vote({ position: -2, voteCount: 50 }));
+    expect(r.position).toBeCloseTo(-0.8, 5); // weight capped at 0.7
+    expect(r.confidence).toBeCloseTo(1, 5); // 0.8 + capped 0.35 → clamped to 1
+  });
+});
+
+describe("computeMatch vote evidence", () => {
+  const voter: VoterStanceInput[] = [
+    { issueId: "climate", issueName: "Climate", position: 2, importance: 4 },
+  ];
+  const positions: CandidatePositionInput[] = [
+    {
+      issueId: "climate",
+      issueName: "Climate",
+      position: 2,
+      confidence: 0.5,
+      summary: "Sponsored clean-energy bills.",
+    },
+  ];
+
+  it("votes MOVE the candidate position (unlike donor money)", () => {
+    const result = computeMatch(voter, positions, [], [
+      vote({ issueId: "climate", position: -2, voteCount: 6 }),
+    ]);
+    expect(result.breakdown[0].candidatePosition).toBeCloseTo(-0.8, 5);
+    expect(result.breakdown[0].voteCount).toBe(6);
+  });
+
+  it("leaves voteCount at 0 and position untouched without vote signals", () => {
+    const result = computeMatch(voter, positions, [], []);
+    expect(result.breakdown[0].candidatePosition).toBe(2);
+    expect(result.breakdown[0].voteCount).toBe(0);
   });
 });

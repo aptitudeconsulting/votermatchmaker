@@ -5,6 +5,7 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { VoteExample } from './voteExample';
 
 export interface CandidatePosition {
   issueId: string;
@@ -13,6 +14,15 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** Number of actual House roll-call votes behind this position (0 when none). */
+  voteCount: number;
+  /**
+     * Share (0..1) of those votes that fell in the majority direction, or null when no votes.
+     * @nullable
+     */
+  voteShare: number | null;
+  /** A few illustrative floor votes behind a vote-derived position. Empty when none. */
+  voteExamples: VoteExample[];
   /** True when classified donor money contradicts this legislation-derived position. */
   donorTension: boolean;
   /**

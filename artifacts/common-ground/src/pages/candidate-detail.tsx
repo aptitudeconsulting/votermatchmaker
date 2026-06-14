@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { Show } from "@clerk/react";
 import {
@@ -9,6 +10,7 @@ import {
   type DonorCategory,
   type Provision,
   type ProvisionFlag,
+  type VoteExample,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +33,7 @@ import {
   FileText,
   Info,
   Sparkles,
+  Vote,
   Wallet,
 } from "lucide-react";
 

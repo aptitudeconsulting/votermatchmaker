@@ -16,6 +16,8 @@ export interface MatchIssueBreakdown {
   alignment: number;
   /** @nullable */
   summary?: string | null;
+  /** Number of actual House roll-call votes behind the candidate position (0 when none). */
+  voteCount: number;
   /** True when classified donor money contradicts this position. */
   donorTension: boolean;
   /**

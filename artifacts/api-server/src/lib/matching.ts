@@ -24,6 +24,19 @@ export interface DonorSignalInput {
   topSectorLabel: string | null;
 }
 
+/**
+ * Roll-call vote evidence for one issue — the candidate's ACTUAL voting record.
+ * Unlike donor signals, votes MOVE the position: they are the strongest form of
+ * legislative behavior, so they dominate the sponsorship/party-prior base.
+ */
+export interface VoteSignalInput {
+  issueId: string;
+  /** Vote-derived position on the -2..+2 axis. */
+  position: number;
+  /** Number of directional floor votes behind the signal. */
+  voteCount: number;
+}
+
 export interface IssueBreakdown {
   issueId: string;
   issueName: string;
@@ -33,6 +46,8 @@ export interface IssueBreakdown {
   candidateConfidence: number;
   alignment: number;
   summary: string | null;
+  /** Number of actual floor votes behind the candidate's position (0 when none). */
+  voteCount: number;
   /** True when donor money clearly contradicts the legislative-derived position. */
   donorTension: boolean;
   /** One-line, factual explanation of the tension (record says X, money leans Y). */
@@ -113,15 +128,46 @@ export function applyDonorEvidence(
   return { confidence, donorTension: true, donorNote: note, donorLean: donor.lean };
 }
 
+/**
+ * Blends a candidate's ACTUAL roll-call voting record into their base position
+ * (which comes from sponsorship + party prior + bill-title language). Votes are
+ * the strongest evidence, so they take an increasing share of the blend as the
+ * vote count grows (up to ~70%), and they raise confidence. With no votes the
+ * base position is returned unchanged. Returns the rounded blended position and
+ * confidence plus the vote count for display.
+ */
+export function applyVoteEvidence(
+  basePosition: number,
+  baseConfidence: number,
+  vote: VoteSignalInput | undefined,
+): { position: number; confidence: number; voteCount: number } {
+  if (!vote || vote.voteCount <= 0) {
+    return { position: basePosition, confidence: baseConfidence, voteCount: 0 };
+  }
+  const w = Math.min(0.7, vote.voteCount * 0.12);
+  const position = clamp(w * vote.position + (1 - w) * basePosition, -2, 2);
+  const confidence = Math.min(
+    1,
+    baseConfidence + Math.min(0.35, vote.voteCount * 0.04),
+  );
+  return {
+    position: Math.round(position * 100) / 100,
+    confidence: Math.round(confidence * 100) / 100,
+    voteCount: vote.voteCount,
+  };
+}
+
 export function computeMatch(
   voterStances: VoterStanceInput[],
   candidatePositions: CandidatePositionInput[],
   donorSignals: DonorSignalInput[] = [],
+  voteSignals: VoteSignalInput[] = [],
 ): MatchComputation {
   const positionByIssue = new Map(
     candidatePositions.map((p) => [p.issueId, p]),
   );
   const donorByIssue = new Map(donorSignals.map((d) => [d.issueId, d]));
+  const voteByIssue = new Map(voteSignals.map((v) => [v.issueId, v]));
 
   const breakdown: IssueBreakdown[] = [];
   let weightedAlignSum = 0;
@@ -136,11 +182,19 @@ export function computeMatch(
     const cand = positionByIssue.get(stance.issueId);
     if (!cand) continue;
 
+    // Fold in the actual roll-call record first — votes move the position.
+    const vote = voteByIssue.get(stance.issueId);
+    const {
+      position: votedPosition,
+      confidence: votedConfidence,
+      voteCount,
+    } = applyVoteEvidence(cand.position, cand.confidence, vote);
+
     const donor = donorByIssue.get(stance.issueId);
     const { confidence: effConfidence, donorTension, donorNote, donorLean } =
-      applyDonorEvidence(cand.position, cand.confidence, donor, stance.issueName);
+      applyDonorEvidence(votedPosition, votedConfidence, donor, stance.issueName);
 
-    const alignment = signedAlignment(stance.position, cand.position);
+    const alignment = signedAlignment(stance.position, votedPosition);
     const align01 = (alignment + 1) / 2; // 0..1
     const weight = stance.importance * effConfidence;
 
@@ -153,10 +207,11 @@ export function computeMatch(
       issueName: stance.issueName,
       voterPosition: stance.position,
       voterImportance: stance.importance,
-      candidatePosition: cand.position,
+      candidatePosition: votedPosition,
       candidateConfidence: effConfidence,
       alignment,
       summary: cand.summary || null,
+      voteCount,
       donorTension,
       donorNote,
       donorLean,

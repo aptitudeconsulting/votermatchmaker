@@ -8,9 +8,11 @@ import {
   candidateRecordEnrichmentTable,
   candidateDonorCategoriesTable,
   candidateDonorSignalsTable,
+  candidateVoteSignalsTable,
 } from "@workspace/db";
 import { ListCandidatesResponse, GetCandidateResponse } from "@workspace/api-zod";
 import { toCandidate } from "../lib/serialize";
+import { applyVoteEvidence } from "../lib/matching";
 import { ISSUES } from "../data/political";
 
 const ISSUE_NAME = new Map(ISSUES.map((i) => [i.id, i.name]));
@@ -79,6 +81,12 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
     .where(eq(candidateDonorSignalsTable.candidateId, id));
   const signalByIssue = new Map(donorSignals.map((s) => [s.issueId, s]));
 
+  const voteSignals = await db
+    .select()
+    .from(candidateVoteSignalsTable)
+    .where(eq(candidateVoteSignalsTable.candidateId, id));
+  const voteByIssue = new Map(voteSignals.map((v) => [v.issueId, v]));
+
   const enrichmentRows = await db
     .select()
     .from(candidateRecordEnrichmentTable)
@@ -88,43 +96,72 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
   );
 
   // A position carries a tension flag when classified donor money clearly points
-  // the opposite way from the legislation-derived position. Positions never move.
-  const positionTension = (p: (typeof positions)[number]) => {
-    const sig = signalByIssue.get(p.issueId);
+  // the opposite way from the (vote-blended) position. Donor money never moves it.
+  const positionTension = (issueId: string, positionValue: number) => {
+    const sig = signalByIssue.get(issueId);
     if (!sig || !(sig.classifiedTotal > 0) || Math.abs(sig.lean) < 0.3) {
       return { donorTension: false, donorNote: null as string | null, donorLean: sig?.lean ?? null };
     }
-    const posSign = Math.sign(p.position);
+    const posSign = Math.sign(positionValue);
     const donorSign = Math.sign(sig.lean);
     if (posSign === 0 || donorSign === 0 || donorSign === posSign) {
       return { donorTension: false, donorNote: null as string | null, donorLean: sig.lean };
     }
     const dollars = `$${Math.round(sig.classifiedTotal).toLocaleString("en-US")}`;
     const sector = sig.topSectorLabel ?? "their largest classified donors";
-    const issueName = ISSUE_NAME.get(p.issueId) ?? p.issueId;
+    const issueName = ISSUE_NAME.get(issueId) ?? issueId;
     const note = `Their record leans one way on ${issueName.toLowerCase()}, but ${dollars} in classified donations (led by ${sector}) leans the other way.`;
     return { donorTension: true, donorNote: note, donorLean: sig.lean };
   };
 
+  // Surface an issue when it has sponsorship evidence OR an actual voting record.
+  const positionByIssue = new Map(positions.map((p) => [p.issueId, p]));
+  const issueIds = new Set<string>([
+    ...positions.filter((p) => p.sourceCount > 0).map((p) => p.issueId),
+    ...voteSignals.filter((v) => v.voteCount > 0).map((v) => v.issueId),
+  ]);
+
+  const outPositions = [...issueIds]
+    .map((issueId) => {
+      const p = positionByIssue.get(issueId);
+      const vote = voteByIssue.get(issueId);
+      const basePosition = p?.position ?? 0;
+      // A vote-only issue (no sponsorship) starts from a low base confidence that
+      // the voting record then raises; sourceCount stays 0 to be transparent.
+      const baseConfidence = p?.confidence ?? 0.3;
+      const blended = applyVoteEvidence(
+        basePosition,
+        baseConfidence,
+        vote ? { issueId, position: vote.position, voteCount: vote.voteCount } : undefined,
+      );
+      const t = positionTension(issueId, blended.position);
+      const issueName = ISSUE_NAME.get(issueId) ?? issueId;
+      const summary =
+        p?.summary ||
+        (vote
+          ? `Position derived from ${vote.voteCount} House floor vote${vote.voteCount === 1 ? "" : "s"} on ${issueName.toLowerCase()}.`
+          : "");
+      return {
+        issueId,
+        issueName,
+        position: blended.position,
+        confidence: blended.confidence,
+        summary,
+        sourceCount: p?.sourceCount ?? 0,
+        voteCount: blended.voteCount,
+        voteShare: vote ? vote.agreeShare : null,
+        voteExamples: vote ? vote.examples : [],
+        donorTension: t.donorTension,
+        donorNote: t.donorNote,
+        donorLean: t.donorLean,
+      };
+    })
+    // Strongest evidence first: most floor votes, then most sponsorship sources.
+    .sort((a, b) => b.voteCount - a.voteCount || b.sourceCount - a.sourceCount);
+
   const data = GetCandidateResponse.parse({
     candidate: toCandidate(candidate),
-    positions: positions
-      .filter((p) => p.sourceCount > 0)
-      .sort((a, b) => b.sourceCount - a.sourceCount)
-      .map((p) => {
-        const t = positionTension(p);
-        return {
-          issueId: p.issueId,
-          issueName: ISSUE_NAME.get(p.issueId) ?? p.issueId,
-          position: p.position,
-          confidence: p.confidence,
-          summary: p.summary,
-          sourceCount: p.sourceCount,
-          donorTension: t.donorTension,
-          donorNote: t.donorNote,
-          donorLean: t.donorLean,
-        };
-      }),
+    positions: outPositions,
     record: records.map((r) => {
       const enr = enrichmentByRecord.get(r.id);
       return {

@@ -8,6 +8,7 @@ import {
   candidatePositionsTable,
   candidateDonorSignalsTable,
   candidateDonorCategoriesTable,
+  candidateVoteSignalsTable,
   candidateRecordsTable,
   candidateRecordEnrichmentTable,
   type Candidate,
@@ -21,6 +22,7 @@ import {
   type VoterStanceInput,
   type CandidatePositionInput,
   type DonorSignalInput,
+  type VoteSignalInput,
 } from "../lib/matching";
 import { ISSUES } from "../data/political";
 
@@ -101,6 +103,27 @@ async function donorSignalsByCandidate(
   return map;
 }
 
+async function voteSignalsByCandidate(
+  candidateIds: string[],
+): Promise<Map<string, VoteSignalInput[]>> {
+  const map = new Map<string, VoteSignalInput[]>();
+  if (candidateIds.length === 0) return map;
+  const rows = await db
+    .select()
+    .from(candidateVoteSignalsTable)
+    .where(inArray(candidateVoteSignalsTable.candidateId, candidateIds));
+  for (const r of rows) {
+    const arr = map.get(r.candidateId) ?? [];
+    arr.push({
+      issueId: r.issueId,
+      position: r.position,
+      voteCount: r.voteCount,
+    });
+    map.set(r.candidateId, arr);
+  }
+  return map;
+}
+
 interface DonorCategoryOut {
   sector: string;
   label: string;
@@ -162,12 +185,14 @@ router.get("/me/matches", async (req: AuthedRequest, res): Promise<void> => {
   const posMap = await positionsByCandidate(candidateIds);
   const donorMap = await donorSignalsByCandidate(candidateIds);
   const donorCategoryMap = await donorCategoriesByCandidate(candidateIds);
+  const voteMap = await voteSignalsByCandidate(candidateIds);
 
   const results = candidates.map((c) => {
     const result = computeMatch(
       stances,
       posMap.get(c.id) ?? [],
       donorMap.get(c.id) ?? [],
+      voteMap.get(c.id) ?? [],
     );
     const donorCategories = donorCategoryMap.get(c.id) ?? [];
     return {
@@ -212,10 +237,12 @@ router.get(
     const stances = await loadVoterStances(userId);
     const posMap = await positionsByCandidate([candidateId]);
     const donorMap = await donorSignalsByCandidate([candidateId]);
+    const voteMap = await voteSignalsByCandidate([candidateId]);
     const result = computeMatch(
       stances,
       posMap.get(candidateId) ?? [],
       donorMap.get(candidateId) ?? [],
+      voteMap.get(candidateId) ?? [],
     );
 
     // Surface notable provisions inside bills this candidate backed that touch an

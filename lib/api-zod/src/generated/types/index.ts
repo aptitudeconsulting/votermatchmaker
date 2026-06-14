@@ -47,5 +47,6 @@ export * from './stanceUpdate';
 export * from './statsOverview';
 export * from './statsOverviewFecSyncStatus';
 export * from './unauthorizedResponse';
+export * from './voteExample';
 export * from './voterLocation';
 export * from './voterProfile';

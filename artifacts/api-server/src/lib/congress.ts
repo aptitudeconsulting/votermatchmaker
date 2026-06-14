@@ -363,3 +363,146 @@ export function formatName(name: string): string {
   }
   return name;
 }
+
+// ---------------------------------------------------------------------------
+// House roll-call votes — the actual voting record.
+// ---------------------------------------------------------------------------
+
+export interface RawHouseVote {
+  rollCallNumber: number;
+  legislationType?: string;
+  legislationNumber?: string;
+  voteQuestion?: string;
+  result?: string;
+  startDate?: string;
+}
+
+export interface RawMemberVote {
+  bioguideId: string;
+  voteCast: string; // "Yea" | "Nay" | "Present" | "Not Voting"
+}
+
+/** Lists all House roll-call votes for a (congress, session). */
+export async function fetchHouseVoteList(
+  congress: number,
+  session: number,
+  apiKey: string,
+): Promise<RawHouseVote[]> {
+  const out: RawHouseVote[] = [];
+  let offset = 0;
+  const limit = 250;
+  for (let i = 0; i < 12; i++) {
+    const data = await apiGet<{
+      houseRollCallVotes?: {
+        rollCallNumber: number;
+        legislationType?: string;
+        legislationNumber?: string;
+        voteQuestion?: string;
+        result?: string;
+        startDate?: string;
+      }[];
+    }>(`/house-vote/${congress}/${session}?limit=${limit}&offset=${offset}`, apiKey);
+    const batch = data.houseRollCallVotes ?? [];
+    out.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+    await sleep(250);
+  }
+  return out;
+}
+
+/**
+ * Fetches one House roll call's detail — notably the `voteQuestion`, which the
+ * list endpoint omits and which is needed to tell substantive passage votes
+ * apart from procedural motions.
+ */
+export async function fetchHouseVoteDetail(
+  congress: number,
+  session: number,
+  rollCallNumber: number,
+  apiKey: string,
+): Promise<{ voteQuestion: string | null; result: string | null } | null> {
+  try {
+    const data = await apiGet<{
+      houseRollCallVote?: { voteQuestion?: string; result?: string };
+    }>(`/house-vote/${congress}/${session}/${rollCallNumber}`, apiKey);
+    const v = data.houseRollCallVote;
+    if (!v) return null;
+    return {
+      voteQuestion: v.voteQuestion ?? null,
+      result: v.result ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Per-member Yea/Nay for one House roll call. */
+export async function fetchHouseVoteMembers(
+  congress: number,
+  session: number,
+  rollCallNumber: number,
+  apiKey: string,
+): Promise<RawMemberVote[]> {
+  const data = await apiGet<{
+    houseRollCallVoteMemberVotes?: {
+      results?: { bioguideID?: string; voteCast?: string }[];
+    };
+  }>(`/house-vote/${congress}/${session}/${rollCallNumber}/members`, apiKey);
+  const results = data.houseRollCallVoteMemberVotes?.results ?? [];
+  return results
+    .filter((r) => r.bioguideID && r.voteCast)
+    .map((r) => ({ bioguideId: r.bioguideID!, voteCast: r.voteCast! }));
+}
+
+/** Fetches a bill's title + policy area (used to map a voted bill to an issue). */
+export async function fetchBillMeta(
+  congress: number,
+  billType: string,
+  billNumber: string,
+  apiKey: string,
+): Promise<{ title: string; policyArea: string | null } | null> {
+  const t = billType.toLowerCase();
+  try {
+    const data = await apiGet<{
+      bill?: { title?: string; policyArea?: { name?: string } };
+    }>(`/bill/${congress}/${t}/${billNumber}`, apiKey);
+    const title = data.bill?.title ?? "";
+    if (!title) return null;
+    return { title, policyArea: data.bill?.policyArea?.name ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Maps a bill (by title + policy area) to an issue and a directional sign on
+ * that issue's internal axis. Direction is the sign of the title's lexicon
+ * language: +1 toward the "+" pole, -1 toward the "-" pole. Returns null when
+ * the bill can't be tied to an issue OR has no clear directional language —
+ * a vote we can't interpret directionally is simply not counted.
+ */
+export function billIssueAndDirection(
+  title: string,
+  policyArea: string | null,
+): { issueId: string; direction: number } | null {
+  const bill: RawBill = {
+    title,
+    policyArea: policyArea ? { name: policyArea } : undefined,
+  };
+  const issueId = billToIssue(bill);
+  if (!issueId) return null;
+  const text = textDirection(issueId, [title]);
+  if (text === null) return null;
+  const direction = Math.sign(text);
+  if (direction === 0) return null;
+  return { issueId, direction };
+}
+
+export function publicBillUrlFrom(
+  congress: number,
+  type: string,
+  number: string,
+): string | null {
+  return publicBillUrl({ congress, type, number });
+}

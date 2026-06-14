@@ -18,6 +18,7 @@ async function buildAll() {
     entryPoints: [
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/scripts/syncFec.ts"),
+      path.resolve(artifactDir, "src/scripts/syncVotes.ts"),
     ],
     platform: "node",
     bundle: true,

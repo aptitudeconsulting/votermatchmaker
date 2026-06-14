@@ -268,6 +268,16 @@ export const GetCandidateResponse = zod.object({
   "confidence": zod.number(),
   "summary": zod.string(),
   "sourceCount": zod.number(),
+  "voteCount": zod.number().describe('Number of actual House roll-call votes behind this position (0 when none).'),
+  "voteShare": zod.number().nullable().describe('Share (0..1) of those votes that fell in the majority direction, or null when no votes.'),
+  "voteExamples": zod.array(zod.object({
+  "billNumber": zod.string(),
+  "title": zod.string(),
+  "url": zod.string().nullable(),
+  "voteCast": zod.string().describe('The member\'s recorded vote, e.g. \"Yea\" or \"Nay\".'),
+  "date": zod.string().nullable(),
+  "aligns": zod.boolean().describe('True when this vote pushed toward the issue\'s \"+\" pole.')
+})).describe('A few illustrative floor votes behind a vote-derived position. Empty when none.'),
   "donorTension": zod.boolean().describe('True when classified donor money contradicts this legislation-derived position.'),
   "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
@@ -343,6 +353,7 @@ export const ListMyMatchesResponseItem = zod.object({
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
   "summary": zod.string().nullish(),
+  "voteCount": zod.number().describe('Number of actual House roll-call votes behind the candidate position (0 when none).'),
   "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
   "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
@@ -356,6 +367,7 @@ export const ListMyMatchesResponseItem = zod.object({
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
   "summary": zod.string().nullish(),
+  "voteCount": zod.number().describe('Number of actual House roll-call votes behind the candidate position (0 when none).'),
   "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
   "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
@@ -415,6 +427,7 @@ export const GetMyMatchResponse = zod.object({
   "candidateConfidence": zod.number(),
   "alignment": zod.number(),
   "summary": zod.string().nullish(),
+  "voteCount": zod.number().describe('Number of actual House roll-call votes behind the candidate position (0 when none).'),
   "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
   "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')

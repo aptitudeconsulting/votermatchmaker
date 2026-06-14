@@ -159,6 +159,19 @@ export interface Candidate {
   isSample: boolean;
 }
 
+export interface VoteExample {
+  billNumber: string;
+  title: string;
+  /** @nullable */
+  url: string | null;
+  /** The member's recorded vote, e.g. "Yea" or "Nay". */
+  voteCast: string;
+  /** @nullable */
+  date: string | null;
+  /** True when this vote pushed toward the issue's "+" pole. */
+  aligns: boolean;
+}
+
 export interface CandidatePosition {
   issueId: string;
   issueName: string;
@@ -166,6 +179,15 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** Number of actual House roll-call votes behind this position (0 when none). */
+  voteCount: number;
+  /**
+     * Share (0..1) of those votes that fell in the majority direction, or null when no votes.
+     * @nullable
+     */
+  voteShare: number | null;
+  /** A few illustrative floor votes behind a vote-derived position. Empty when none. */
+  voteExamples: VoteExample[];
   /** True when classified donor money contradicts this legislation-derived position. */
   donorTension: boolean;
   /**
@@ -256,6 +278,8 @@ export interface MatchIssueBreakdown {
   alignment: number;
   /** @nullable */
   summary?: string | null;
+  /** Number of actual House roll-call votes behind the candidate position (0 when none). */
+  voteCount: number;
   /** True when classified donor money contradicts this position. */
   donorTension: boolean;
   /**

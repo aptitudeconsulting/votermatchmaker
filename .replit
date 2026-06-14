@@ -28,6 +28,10 @@ args = "FEC Sync"
 task = "workflow.run"
 args = "Provisions Sync"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "House Votes Sync"
+
 [[workflows.workflow]]
 name = "Congress Sync"
 author = "agent"
@@ -57,6 +61,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run enrich"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "House Votes Sync"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run sync:votes"
 
 [workflows.workflow.metadata]
 outputType = "console"
