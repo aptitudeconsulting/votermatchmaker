@@ -5,6 +5,7 @@ import {
   candidatesTable,
   candidatePositionsTable,
   candidateRecordsTable,
+  candidateRecordEnrichmentTable,
   candidateDonorCategoriesTable,
   candidateDonorSignalsTable,
 } from "@workspace/db";
@@ -78,6 +79,14 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
     .where(eq(candidateDonorSignalsTable.candidateId, id));
   const signalByIssue = new Map(donorSignals.map((s) => [s.issueId, s]));
 
+  const enrichmentRows = await db
+    .select()
+    .from(candidateRecordEnrichmentTable)
+    .where(eq(candidateRecordEnrichmentTable.candidateId, id));
+  const enrichmentByRecord = new Map(
+    enrichmentRows.map((e) => [e.recordId, e]),
+  );
+
   // A position carries a tension flag when classified donor money clearly points
   // the opposite way from the legislation-derived position. Positions never move.
   const positionTension = (p: (typeof positions)[number]) => {
@@ -116,18 +125,28 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
           donorLean: t.donorLean,
         };
       }),
-    record: records.map((r) => ({
-      id: r.id,
-      title: r.title,
-      kind: r.kind as "sponsored" | "cosponsored" | "statement",
-      issueId: r.issueId ?? null,
-      issueName: r.issueId ? ISSUE_NAME.get(r.issueId) ?? null : null,
-      date: r.date ?? null,
-      billNumber: r.billNumber ?? null,
-      congress: r.congress ?? null,
-      url: r.url ?? null,
-      summary: r.summary ?? null,
-    })),
+    record: records.map((r) => {
+      const enr = enrichmentByRecord.get(r.id);
+      return {
+        id: r.id,
+        title: r.title,
+        kind: r.kind as "sponsored" | "cosponsored" | "statement",
+        issueId: r.issueId ?? null,
+        issueName: r.issueId ? ISSUE_NAME.get(r.issueId) ?? null : null,
+        date: r.date ?? null,
+        billNumber: r.billNumber ?? null,
+        congress: r.congress ?? null,
+        url: r.url ?? null,
+        summary: enr?.summary ?? r.summary ?? null,
+        provisions: (enr?.provisions ?? []).map((p) => ({
+          text: p.text,
+          issueId: p.issueId,
+          issueName: p.issueId ? ISSUE_NAME.get(p.issueId) ?? null : null,
+          direction: p.direction,
+          unrelated: p.unrelated,
+        })),
+      };
+    }),
     recordCount: records.length,
     donorCategories: donorCategories.map((d) => ({
       sector: d.sector,

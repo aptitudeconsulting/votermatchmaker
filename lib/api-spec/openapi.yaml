@@ -577,6 +577,23 @@ components:
         contributorCount:
           type: integer
 
+    Provision:
+      type: object
+      required: [text, issueId, direction, unrelated]
+      properties:
+        text:
+          type: string
+        issueId:
+          type: ["string", "null"]
+        issueName:
+          type: ["string", "null"]
+        direction:
+          type: integer
+          description: +1 toward the issue's "+" pole, -1 toward the "-" pole, 0 unclear.
+        unrelated:
+          type: boolean
+          description: True when the provision appears unrelated to the bill's main subject (rider/earmark-like).
+
     RecordItem:
       type: object
       required: [id, title, kind]
@@ -602,6 +619,11 @@ components:
           type: ["string", "null"]
         summary:
           type: ["string", "null"]
+        provisions:
+          type: array
+          description: AI-extracted notable/unrelated provisions from the bill's official CRS summary. Empty unless enriched.
+          items:
+            $ref: "#/components/schemas/Provision"
 
     CandidateDetail:
       type: object
@@ -694,6 +716,28 @@ components:
           type: integer
           description: Number of prioritized issues with a donor tension flag.
 
+    ProvisionFlag:
+      type: object
+      required: [issueId, issueName, text, unrelated, conflict, billTitle]
+      properties:
+        issueId:
+          type: string
+        issueName:
+          type: string
+        text:
+          type: string
+        unrelated:
+          type: boolean
+        conflict:
+          type: boolean
+          description: True when the provision's direction opposes the voter's stance on this issue.
+        billTitle:
+          type: string
+        billNumber:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+
     MatchDetail:
       type: object
       required: [candidate, score, grade, summary, coverage, breakdown]
@@ -712,6 +756,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MatchIssueBreakdown"
+        provisionFlags:
+          type: array
+          description: Provisions in bills the candidate backed that touch the voter's prioritized issues; conflict=true when they oppose the voter's stance. Empty unless enriched.
+          items:
+            $ref: "#/components/schemas/ProvisionFlag"
 
     StatsOverview:
       type: object

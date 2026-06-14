@@ -11,10 +11,11 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - `pnpm --filter @workspace/api-server run seed` — seed issues, questions, and sample local candidates
 - `pnpm --filter @workspace/api-server run sync` — pull current members of Congress + their legislative records from Congress.gov (long-running; run as a workflow, not via bash, or it gets reaped)
 - `pnpm --filter @workspace/api-server run sync:fec` — pull FEC campaign-finance donor signals for federal candidates (run as the "FEC Sync" workflow; supports `FEC_SYNC_LIMIT` for resumable batches; degrades silently with no `FEC_API_KEY`)
+- `pnpm --filter @workspace/api-server run enrich` — fetch official CRS bill summaries + AI-extract notable/unrelated provisions for each candidate's bills (run as the "Provisions Sync" workflow; resumable via `PROVISIONS_LIMIT`/`PROVISIONS_PER_CANDIDATE`; degrades silently with no OpenAI integration or `CONGRESS_API_KEY`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); optional `GOOGLE_CIVIC_API_KEY` for live ballot measures, optional `FEC_API_KEY` for donor signals
+- Required env: `DATABASE_URL`, `CONGRESS_API_KEY`, Clerk keys (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`); optional `GOOGLE_CIVIC_API_KEY` for live ballot measures, optional `FEC_API_KEY` for donor signals, optional OpenAI AI integration (`AI_INTEGRATIONS_OPENAI_*`) for bill-provision enrichment
 - Public mirror of all project files: https://github.com/aptitudeconsulting/votermatchmaker (push with a token that has Contents:write — see memory)
 
 ## Stack
@@ -27,7 +28,8 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 
 ## Where things live
 
-- DB schema: `lib/db/src/schema/*.ts` (tables: candidates, candidate_positions, candidate_records, candidate_donor_categories, candidate_donor_signals, issues, questions, voters, voter_answers, voter_stances, sync_meta)
+- DB schema: `lib/db/src/schema/*.ts` (tables: candidates, candidate_positions, candidate_records, candidate_record_enrichment, candidate_donor_categories, candidate_donor_signals, issues, questions, voters, voter_answers, voter_stances, sync_meta)
+- Bill provisions: AI extraction in `artifacts/api-server/src/lib/provisions.ts` (grounded by `ISSUE_POLES` in `political.ts`); CRS summary fetch `fetchBillSummary` in `src/lib/congress.ts`; enrichment in `src/scripts/enrichProvisions.ts`; stored in `candidate_record_enrichment` keyed by deterministic recordId so it survives the Congress-sync delete+insert
 - FEC donor signals: classification dict in `artifacts/api-server/src/data/donors.ts`; FEC client + crosswalk + `buildDonorProfile` in `src/lib/fec.ts`; sync in `src/scripts/syncFec.ts`
 - API contract (source of truth): `lib/api-spec/` → generated hooks/types in `lib/api-client-react/src/generated/`
 - API routes: `artifacts/api-server/src/routes/` (candidates, matches, profile, issues, questions, stats)
@@ -41,6 +43,7 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - Candidate positions are *derived* from sponsored/cosponsored legislation (policyArea → issue mapping), not from campaign statements; each position carries a confidence based on evidence volume.
 - Candidate id format is `congress-{bioguideId}` for real members; sample local races use seeded ids.
 - Generated mutation hooks do NOT invalidate queries — `useInvalidateVoterData()` (`src/lib/invalidate.ts`) invalidates all `/api/me/*` queries after profile-changing mutations.
+- Bill provisions ("what's in the bills they backed") are a THIRD, additive signal derived from each bill's official CRS summary via AI. They never move positions; they surface specific notable/unrelated (rider/earmark-like) provisions on the candidate detail page (with source links + AI disclosure) and flag provisions whose internal-axis direction opposes the signed-in voter's stance on the match page. The internal direction is only used for voter-relative conflict detection and is never shown as left/right.
 - FEC donor data is a SECOND, independent signal: it never moves a position (positions stay legislation-derived). Donor money only (a) raises/lowers a position's match *confidence* when it agrees/contradicts in sign, and (b) raises a neutral "donor tension" flag. Sectors are *derived* from contributor/employer name keywords (the FEC has no industry codes), so they are approximate and surfaced with FEC attribution. Federal candidates only; everything degrades silently with no FEC key / crosswalk miss / no classifiable money.
 
 ## Product

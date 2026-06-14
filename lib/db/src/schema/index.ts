@@ -3,6 +3,7 @@ export * from "./questions";
 export * from "./candidates";
 export * from "./candidatePositions";
 export * from "./candidateRecords";
+export * from "./candidateRecordEnrichment";
 export * from "./candidateDonors";
 export * from "./voters";
 export * from "./voterStances";

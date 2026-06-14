@@ -111,6 +111,49 @@ export async function fetchMemberBills(
   return (data[key] as RawBill[] | undefined) ?? [];
 }
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#8217;|&rsquo;|&#x2019;/g, "'")
+    .replace(/&#8220;|&#8221;|&ldquo;|&rdquo;/g, '"')
+    .replace(/&#8212;|&mdash;/g, "—")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Fetches the latest official CRS summary text for a bill, with HTML stripped.
+ * Returns null when no summary exists or the request fails (degrade silently).
+ */
+export async function fetchBillSummary(
+  congress: number,
+  billType: string,
+  billNumber: string,
+  apiKey: string,
+): Promise<string | null> {
+  const t = billType.toLowerCase();
+  try {
+    const data = await apiGet<{
+      summaries?: { text?: string; updateDate?: string; actionDate?: string }[];
+    }>(`/bill/${congress}/${t}/${billNumber}/summaries`, apiKey);
+    const sums = data.summaries ?? [];
+    if (sums.length === 0) return null;
+    sums.sort((a, b) =>
+      (b.updateDate ?? b.actionDate ?? "").localeCompare(
+        a.updateDate ?? a.actionDate ?? "",
+      ),
+    );
+    const text = stripHtml(sums[0]?.text ?? "");
+    return text.length > 0 ? text : null;
+  } catch {
+    return null;
+  }
+}
+
 function billTypePath(type: string): string | null {
   const map: Record<string, string> = {
     HR: "house-bill",

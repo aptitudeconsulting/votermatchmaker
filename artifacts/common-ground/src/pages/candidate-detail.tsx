@@ -7,6 +7,8 @@ import {
   type RecordItem,
   type MatchIssueBreakdown,
   type DonorCategory,
+  type Provision,
+  type ProvisionFlag,
 } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +24,15 @@ import {
   formatDollars,
 } from "@/components/civic";
 import { confidenceLabel } from "@/lib/issue-meta";
-import { ArrowLeft, ExternalLink, FileText, Info, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ExternalLink,
+  FileText,
+  Info,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
 
 export default function CandidateDetail() {
   const params = useParams();
@@ -136,6 +146,14 @@ export default function CandidateDetail() {
             ))}
           </div>
         )}
+        {record.some((r) => r.provisions && r.provisions.length > 0) && (
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
+            Provisions are extracted by AI from each bill's official Congressional
+            Research Service summary. They can contain errors — always check the
+            linked source.
+          </p>
+        )}
       </section>
     </div>
   );
@@ -175,8 +193,81 @@ function MatchScorecard({ candidateId }: { candidateId: string }) {
             <BreakdownRow key={b.issueId} item={b} />
           ))}
         </div>
+        {data.provisionFlags && data.provisionFlags.length > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-semibold">
+                  What's in the bills they backed
+                </h3>
+                <Badge variant="outline" className="gap-1 text-xs font-normal">
+                  <Sparkles className="h-3 w-3" /> AI-flagged
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Specific provisions inside bills this candidate sponsored that
+                touch issues you answered.
+              </p>
+              {data.provisionFlags.map((f, i) => (
+                <ProvisionFlagRow key={i} flag={f} />
+              ))}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function ProvisionFlagRow({ flag }: { flag: ProvisionFlag }) {
+  return (
+    <div
+      className={`rounded-md border px-3 py-2 text-sm ${
+        flag.conflict
+          ? "border-rose-500/30 bg-rose-500/5"
+          : "border-border bg-muted/40"
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="secondary" className="text-xs">
+          {flag.issueName}
+        </Badge>
+        {flag.conflict && (
+          <Badge
+            variant="outline"
+            className="gap-1 border-rose-500/40 text-xs text-rose-700 dark:text-rose-400"
+          >
+            <AlertTriangle className="h-3 w-3" /> Conflicts with your values
+          </Badge>
+        )}
+        {flag.unrelated && (
+          <Badge variant="outline" className="text-xs">
+            Unrelated provision
+          </Badge>
+        )}
+      </div>
+      <p className="mt-1.5 text-foreground/90">{flag.text}</p>
+      <div className="mt-1 text-xs text-muted-foreground">
+        From{" "}
+        {flag.url ? (
+          <a
+            href={flag.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            {flag.billNumber ? `${flag.billNumber} — ` : ""}
+            {flag.billTitle}
+          </a>
+        ) : (
+          <span>
+            {flag.billNumber ? `${flag.billNumber} — ` : ""}
+            {flag.billTitle}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -296,7 +387,14 @@ function RecordRow({ item }: { item: RecordItem }) {
             {item.date && <span>· {item.date}</span>}
           </div>
           {item.summary && (
-            <p className="line-clamp-2 text-sm text-muted-foreground">{item.summary}</p>
+            <p className="line-clamp-3 text-sm text-muted-foreground">{item.summary}</p>
+          )}
+          {item.provisions && item.provisions.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              {item.provisions.map((p, i) => (
+                <ProvisionLine key={i} provision={p} />
+              ))}
+            </div>
           )}
         </div>
         {item.url && <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
@@ -312,4 +410,25 @@ function RecordRow({ item }: { item: RecordItem }) {
     );
   }
   return content;
+}
+
+function ProvisionLine({ provision }: { provision: Provision }) {
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Sparkles className="h-3 w-3 text-muted-foreground" />
+        {provision.issueName && (
+          <Badge variant="secondary" className="text-xs">
+            {provision.issueName}
+          </Badge>
+        )}
+        {provision.unrelated && (
+          <Badge variant="outline" className="text-xs">
+            Unrelated provision
+          </Badge>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-foreground/80">{provision.text}</p>
+    </div>
+  );
 }

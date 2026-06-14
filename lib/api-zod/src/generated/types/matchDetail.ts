@@ -7,6 +7,7 @@
  */
 import type { Candidate } from './candidate';
 import type { MatchIssueBreakdown } from './matchIssueBreakdown';
+import type { ProvisionFlag } from './provisionFlag';
 
 export interface MatchDetail {
   candidate: Candidate;
@@ -15,4 +16,6 @@ export interface MatchDetail {
   summary: string;
   coverage: number;
   breakdown: MatchIssueBreakdown[];
+  /** Provisions in bills the candidate backed that touch the voter's prioritized issues; conflict=true when they oppose the voter's stance. Empty unless enriched. */
+  provisionFlags?: ProvisionFlag[];
 }

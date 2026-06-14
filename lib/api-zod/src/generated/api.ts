@@ -276,7 +276,14 @@ export const GetCandidateResponse = zod.object({
   "billNumber": zod.string().nullish(),
   "congress": zod.number().nullish(),
   "url": zod.string().nullish(),
-  "summary": zod.string().nullish()
+  "summary": zod.string().nullish(),
+  "provisions": zod.array(zod.object({
+  "text": zod.string(),
+  "issueId": zod.string().nullable(),
+  "issueName": zod.string().nullish(),
+  "direction": zod.number().describe('+1 toward the issue\'s \"+\" pole, -1 toward the \"-\" pole, 0 unclear.'),
+  "unrelated": zod.boolean().describe('True when the provision appears unrelated to the bill\'s main subject (rider\/earmark-like).')
+})).optional().describe('AI-extracted notable\/unrelated provisions from the bill\'s official CRS summary. Empty unless enriched.')
 })),
   "recordCount": zod.number(),
   "donorCategories": zod.array(zod.object({
@@ -390,7 +397,17 @@ export const GetMyMatchResponse = zod.object({
   "donorTension": zod.boolean().describe('True when classified donor money contradicts this position.'),
   "donorNote": zod.string().nullable().describe('Neutral, factual one-line explanation of the donor tension.'),
   "donorLean": zod.number().nullable().describe('Signed donor lean on the internal -2..+2 axis, when donor data exists.')
-}))
+})),
+  "provisionFlags": zod.array(zod.object({
+  "issueId": zod.string(),
+  "issueName": zod.string(),
+  "text": zod.string(),
+  "unrelated": zod.boolean(),
+  "conflict": zod.boolean().describe('True when the provision\'s direction opposes the voter\'s stance on this issue.'),
+  "billTitle": zod.string(),
+  "billNumber": zod.string().nullish(),
+  "url": zod.string().nullish()
+})).optional().describe('Provisions in bills the candidate backed that touch the voter\'s prioritized issues; conflict=true when they oppose the voter\'s stance. Empty unless enriched.')
 })
 
 

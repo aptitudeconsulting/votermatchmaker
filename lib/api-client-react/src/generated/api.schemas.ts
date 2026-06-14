@@ -185,6 +185,18 @@ export interface DonorCategory {
   contributorCount: number;
 }
 
+export interface Provision {
+  text: string;
+  /** @nullable */
+  issueId: string | null;
+  /** @nullable */
+  issueName?: string | null;
+  /** +1 toward the issue's "+" pole, -1 toward the "-" pole, 0 unclear. */
+  direction: number;
+  /** True when the provision appears unrelated to the bill's main subject (rider/earmark-like). */
+  unrelated: boolean;
+}
+
 export type RecordItemKind = typeof RecordItemKind[keyof typeof RecordItemKind];
 
 
@@ -212,6 +224,8 @@ export interface RecordItem {
   url?: string | null;
   /** @nullable */
   summary?: string | null;
+  /** AI-extracted notable/unrelated provisions from the bill's official CRS summary. Empty unless enriched. */
+  provisions?: Provision[];
 }
 
 export interface CandidateDetail {
@@ -261,6 +275,20 @@ export interface MatchResult {
   donorTensionCount: number;
 }
 
+export interface ProvisionFlag {
+  issueId: string;
+  issueName: string;
+  text: string;
+  unrelated: boolean;
+  /** True when the provision's direction opposes the voter's stance on this issue. */
+  conflict: boolean;
+  billTitle: string;
+  /** @nullable */
+  billNumber?: string | null;
+  /** @nullable */
+  url?: string | null;
+}
+
 export interface MatchDetail {
   candidate: Candidate;
   score: number;
@@ -268,6 +296,8 @@ export interface MatchDetail {
   summary: string;
   coverage: number;
   breakdown: MatchIssueBreakdown[];
+  /** Provisions in bills the candidate backed that touch the voter's prioritized issues; conflict=true when they oppose the voter's stance. Empty unless enriched. */
+  provisionFlags?: ProvisionFlag[];
 }
 
 export interface StatsOverview {

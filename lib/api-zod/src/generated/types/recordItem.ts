@@ -5,6 +5,7 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { Provision } from './provision';
 import type { RecordItemKind } from './recordItemKind';
 
 export interface RecordItem {
@@ -25,4 +26,6 @@ export interface RecordItem {
   url?: string | null;
   /** @nullable */
   summary?: string | null;
+  /** AI-extracted notable/unrelated provisions from the bill's official CRS summary. Empty unless enriched. */
+  provisions?: Provision[];
 }

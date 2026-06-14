@@ -7,6 +7,8 @@ import {
   candidatesTable,
   candidatePositionsTable,
   candidateDonorSignalsTable,
+  candidateRecordsTable,
+  candidateRecordEnrichmentTable,
   type Candidate,
 } from "@workspace/db";
 import { ListMyMatchesResponse, GetMyMatchResponse } from "@workspace/api-zod";
@@ -169,6 +171,55 @@ router.get(
       donorMap.get(candidateId) ?? [],
     );
 
+    // Surface notable provisions inside bills this candidate backed that touch an
+    // issue the voter answered, flagging ones whose direction opposes the voter.
+    const stanceByIssue = new Map(stances.map((s) => [s.issueId, s]));
+    const currentRecordIds = new Set(
+      (
+        await db
+          .select({ id: candidateRecordsTable.id })
+          .from(candidateRecordsTable)
+          .where(eq(candidateRecordsTable.candidateId, candidateId))
+      ).map((r) => r.id),
+    );
+    const enrichmentRows = (
+      await db
+        .select()
+        .from(candidateRecordEnrichmentTable)
+        .where(eq(candidateRecordEnrichmentTable.candidateId, candidateId))
+    ).filter((e) => currentRecordIds.has(e.recordId));
+
+    const provisionFlags = enrichmentRows
+      .flatMap((e) =>
+        (e.provisions ?? []).map((p) => {
+          if (!p.issueId) return null;
+          const stance = stanceByIssue.get(p.issueId);
+          if (!stance) return null;
+          const sSign = Math.sign(stance.position);
+          const conflict =
+            sSign !== 0 &&
+            p.direction !== 0 &&
+            sSign !== Math.sign(p.direction);
+          return {
+            issueId: p.issueId,
+            issueName: ISSUE_NAME.get(p.issueId) ?? p.issueId,
+            text: p.text,
+            unrelated: p.unrelated,
+            conflict,
+            billTitle: e.billTitle ?? "Legislation",
+            billNumber: e.billNumber ?? null,
+            url: e.url ?? null,
+          };
+        }),
+      )
+      .filter((f): f is NonNullable<typeof f> => f !== null)
+      .sort(
+        (a, b) =>
+          Number(b.conflict) - Number(a.conflict) ||
+          Number(b.unrelated) - Number(a.unrelated),
+      )
+      .slice(0, 12);
+
     const data = GetMyMatchResponse.parse({
       candidate: toCandidate(candidate),
       score: result.score,
@@ -176,6 +227,7 @@ router.get(
       summary: buildMatchSummary(candidate.name, result),
       coverage: result.coverage,
       breakdown: result.breakdown,
+      provisionFlags,
     });
     res.json(data);
   },

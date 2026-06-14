@@ -504,3 +504,69 @@ export const ISSUE_LEXICON: Record<string, { pos: string[]; neg: string[] }> = {
     neg: ["voter id", "election integrity", "security", "citizenship verification"],
   },
 };
+
+/**
+ * Plain-language description of each issue's two poles on the internal axis,
+ * derived directly from the onboarding statements above. Used to ground AI
+ * provision analysis in the SAME axis voters and candidates are scored on.
+ * `plus` describes the "+" pole, `minus` the "-" pole. Never shown to users as
+ * left/right or party-coded.
+ */
+export const ISSUE_POLES: Record<string, { plus: string; minus: string }> = {
+  economy: {
+    plus: "more public investment and stronger market regulation, funded by higher taxes on high earners",
+    minus: "lower taxes, less regulation, and a smaller government role",
+  },
+  healthcare: {
+    plus: "a government guarantee of health coverage and a larger public role",
+    minus: "a mainly private, market-based health system",
+  },
+  immigration: {
+    plus: "expanded legal pathways and a path to citizenship",
+    minus: "stricter enforcement and tighter borders",
+  },
+  climate: {
+    plus: "aggressive action to cut emissions and accelerate clean energy",
+    minus: "protecting existing energy industries and minimizing climate regulation",
+  },
+  education: {
+    plus: "more public-school funding and government-backed college affordability",
+    minus: "school choice and a reduced federal role in education",
+  },
+  guns: {
+    plus: "stronger gun laws such as background checks and firearm limits",
+    minus: "protecting broad gun-ownership rights",
+  },
+  abortion: {
+    plus: "keeping abortion legal and accessible",
+    minus: "placing greater restrictions on abortion",
+  },
+  "criminal-justice": {
+    plus: "rehabilitation and reducing incarceration",
+    minus: "tougher sentencing and an enforcement-first approach",
+  },
+  "foreign-policy": {
+    plus: "diplomacy and a leaner military posture",
+    minus: "higher defense spending and a more interventionist posture",
+  },
+  "civil-rights": {
+    plus: "expanded federal anti-discrimination and civil-rights protections",
+    minus: "a more limited federal role in civil rights",
+  },
+  housing: {
+    plus: "public investment in affordable housing and stronger renter protections",
+    minus: "a market-led, deregulated housing approach",
+  },
+  labor: {
+    plus: "a higher minimum wage and stronger union and worker protections",
+    minus: "a more business-friendly approach that lets the market set pay",
+  },
+  technology: {
+    plus: "stronger regulation of big tech and stricter data-privacy rules",
+    minus: "a lighter-touch, innovation-first approach",
+  },
+  democracy: {
+    plus: "expanding voting access",
+    minus: "tighter election-security requirements",
+  },
+};
