@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { MapPin, ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import neighborhood from "@/assets/neighborhood.webp";
 
 type Phase = "location" | "questions" | "prioritize";
 
@@ -129,7 +130,16 @@ export default function Onboarding() {
             title="Where do you vote?"
             subtitle="We use your ZIP code to find the candidates on your ballot — your representatives in Congress and sample local races."
           />
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="relative h-32 w-full md:h-40">
+              <img
+                src={neighborhood}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
+            </div>
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="zip">ZIP code</Label>

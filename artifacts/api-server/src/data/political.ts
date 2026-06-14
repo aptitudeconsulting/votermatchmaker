@@ -239,7 +239,7 @@ export const QUESTIONS: InsertQuestion[] = [
     id: "climate-1",
     issueId: "climate",
     prompt:
-      "The government should aggressively cut emissions and accelerate the shift to clean energy, even at a cost to some industries.",
+      "The government should act decisively to cut emissions and accelerate the shift to clean energy, even at a cost to some industries.",
     helpText:
       "This weighs ambitious climate action against protecting existing energy jobs and minimizing regulation.",
     kind: "scale",

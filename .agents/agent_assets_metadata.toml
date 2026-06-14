@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "FTJ2BFNUTKTCJelKllwNw"
+uri = "file://artifacts/common-ground/src/assets/hero-voters.png"
+type = "image"
+title = "civic voters hero"
+
+[[generated]]
+id = "q9-MIuKkvZ_nysBMpqPw_"
+uri = "file://artifacts/common-ground/src/assets/compass-map.png"
+type = "image"
+title = "compass on map"
+
+[[generated]]
+id = "WYHNW3XGnoGtaw3xyhDXG"
+uri = "file://artifacts/common-ground/src/assets/neighborhood.png"
+type = "image"
+title = "neighborhood aerial"
