@@ -3,6 +3,7 @@ import {
   applyDonorEvidence,
   applyVoteEvidence,
   computeMatch,
+  scoreToGrade,
   type DonorSignalInput,
   type VoteSignalInput,
   type VoterStanceInput,
@@ -254,5 +255,194 @@ describe("computeMatch vote evidence", () => {
     const result = computeMatch(voter, positions, [], []);
     expect(result.breakdown[0].candidatePosition).toBe(2);
     expect(result.breakdown[0].voteCount).toBe(0);
+  });
+});
+
+describe("scoreToGrade", () => {
+  it("maps each threshold to its letter grade", () => {
+    expect(scoreToGrade(100)).toBe("A+");
+    expect(scoreToGrade(93)).toBe("A+");
+    expect(scoreToGrade(92)).toBe("A");
+    expect(scoreToGrade(88)).toBe("A");
+    expect(scoreToGrade(87)).toBe("A-");
+    expect(scoreToGrade(83)).toBe("A-");
+    expect(scoreToGrade(82)).toBe("B+");
+    expect(scoreToGrade(78)).toBe("B+");
+    expect(scoreToGrade(77)).toBe("B");
+    expect(scoreToGrade(73)).toBe("B");
+    expect(scoreToGrade(72)).toBe("B-");
+    expect(scoreToGrade(68)).toBe("B-");
+    expect(scoreToGrade(67)).toBe("C+");
+    expect(scoreToGrade(63)).toBe("C+");
+    expect(scoreToGrade(62)).toBe("C");
+    expect(scoreToGrade(58)).toBe("C");
+    expect(scoreToGrade(57)).toBe("C-");
+    expect(scoreToGrade(53)).toBe("C-");
+    expect(scoreToGrade(52)).toBe("D");
+    expect(scoreToGrade(45)).toBe("D");
+    expect(scoreToGrade(44)).toBe("F");
+    expect(scoreToGrade(0)).toBe("F");
+  });
+});
+
+describe("computeMatch scoring", () => {
+  it("scores ~100 for perfect agreement on every issue", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "climate", issueName: "Climate", position: 2, importance: 4 },
+      { issueId: "guns", issueName: "Guns", position: -1, importance: 2 },
+    ];
+    const positions: CandidatePositionInput[] = [
+      { issueId: "climate", issueName: "Climate", position: 2, confidence: 1, summary: "" },
+      { issueId: "guns", issueName: "Guns", position: -1, confidence: 1, summary: "" },
+    ];
+    const result = computeMatch(voter, positions);
+    expect(result.score).toBe(100);
+    expect(result.grade).toBe("A+");
+    expect(result.coverage).toBe(1);
+  });
+
+  it("scores low for opposite stances on every issue", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "climate", issueName: "Climate", position: 2, importance: 4 },
+    ];
+    const positions: CandidatePositionInput[] = [
+      { issueId: "climate", issueName: "Climate", position: -2, confidence: 1, summary: "" },
+    ];
+    const result = computeMatch(voter, positions);
+    expect(result.score).toBe(0);
+    expect(result.grade).toBe("F");
+  });
+
+  it("weights higher-importance issues more heavily in the score", () => {
+    const aligned: CandidatePositionInput = {
+      issueId: "a", issueName: "A", position: 2, confidence: 1, summary: "",
+    };
+    const opposed: CandidatePositionInput = {
+      issueId: "b", issueName: "B", position: -2, confidence: 1, summary: "",
+    };
+    const positions = [aligned, opposed];
+
+    // Agreement on the high-importance issue pulls the score up.
+    const agreeOnImportant = computeMatch(
+      [
+        { issueId: "a", issueName: "A", position: 2, importance: 4 },
+        { issueId: "b", issueName: "B", position: 2, importance: 1 },
+      ],
+      positions,
+    );
+    // Disagreement on the high-importance issue pulls the score down.
+    const disagreeOnImportant = computeMatch(
+      [
+        { issueId: "a", issueName: "A", position: 2, importance: 1 },
+        { issueId: "b", issueName: "B", position: 2, importance: 4 },
+      ],
+      positions,
+    );
+    expect(agreeOnImportant.score).toBe(80);
+    expect(disagreeOnImportant.score).toBe(20);
+    expect(agreeOnImportant.score).toBeGreaterThan(disagreeOnImportant.score);
+  });
+
+  it("weights higher-confidence positions more heavily in the score", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "a", issueName: "A", position: 2, importance: 2 },
+      { issueId: "b", issueName: "B", position: 2, importance: 2 },
+    ];
+    // A agrees, B is opposite. As B's confidence rises it drags the score down.
+    const lowDisagreeConfidence = computeMatch(voter, [
+      { issueId: "a", issueName: "A", position: 2, confidence: 1, summary: "" },
+      { issueId: "b", issueName: "B", position: -2, confidence: 0.5, summary: "" },
+    ]);
+    const highDisagreeConfidence = computeMatch(voter, [
+      { issueId: "a", issueName: "A", position: 2, confidence: 1, summary: "" },
+      { issueId: "b", issueName: "B", position: -2, confidence: 1, summary: "" },
+    ]);
+    // weightedAlign = 2 (from A); weightSum = 2 + 1 -> 67, vs 2 + 2 -> 50.
+    expect(lowDisagreeConfidence.score).toBe(67);
+    expect(highDisagreeConfidence.score).toBe(50);
+    expect(lowDisagreeConfidence.score).toBeGreaterThan(
+      highDisagreeConfidence.score,
+    );
+  });
+
+  it("reduces coverage when the candidate is missing positions the voter cares about", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "a", issueName: "A", position: 2, importance: 4 },
+      { issueId: "b", issueName: "B", position: 2, importance: 2 },
+    ];
+    // Only one of the two issues is covered, both at full confidence.
+    const result = computeMatch(voter, [
+      { issueId: "a", issueName: "A", position: 2, confidence: 1, summary: "" },
+    ]);
+    expect(result.coverage).toBeCloseTo(4 / 6, 5);
+    expect(result.breakdown).toHaveLength(1);
+  });
+
+  it("ignores stances with non-positive importance", () => {
+    const result = computeMatch(
+      [
+        { issueId: "a", issueName: "A", position: 2, importance: 4 },
+        { issueId: "b", issueName: "B", position: 2, importance: 0 },
+      ],
+      [
+        { issueId: "a", issueName: "A", position: 2, confidence: 1, summary: "" },
+        { issueId: "b", issueName: "B", position: -2, confidence: 1, summary: "" },
+      ],
+    );
+    // The zero-importance opposite issue must not appear or affect the score.
+    expect(result.breakdown).toHaveLength(1);
+    expect(result.score).toBe(100);
+    expect(result.coverage).toBe(1);
+  });
+
+  it("returns a zero score, F grade, and zero coverage with no comparable issues", () => {
+    const result = computeMatch(
+      [{ issueId: "a", issueName: "A", position: 2, importance: 4 }],
+      [],
+    );
+    expect(result.score).toBe(0);
+    expect(result.grade).toBe("F");
+    expect(result.coverage).toBe(0);
+    expect(result.breakdown).toHaveLength(0);
+  });
+
+  it("selects top agreements and disagreements and counts shared priorities", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "i1", issueName: "I1", position: 2, importance: 4 },
+      { issueId: "i2", issueName: "I2", position: 2, importance: 3 },
+      { issueId: "i3", issueName: "I3", position: 2, importance: 2 },
+      { issueId: "i4", issueName: "I4", position: 2, importance: 4 },
+    ];
+    const positions: CandidatePositionInput[] = [
+      { issueId: "i1", issueName: "I1", position: 2, confidence: 1, summary: "" }, // align 1
+      { issueId: "i2", issueName: "I2", position: 1, confidence: 1, summary: "" }, // align 0.5
+      { issueId: "i3", issueName: "I3", position: 0, confidence: 1, summary: "" }, // align 0
+      { issueId: "i4", issueName: "I4", position: -2, confidence: 1, summary: "" }, // align -1
+    ];
+    const result = computeMatch(voter, positions);
+
+    expect(result.topAgreements.map((b) => b.issueId)).toEqual(["i1", "i2"]);
+    expect(result.topDisagreements.map((b) => b.issueId)).toEqual(["i4", "i3"]);
+    // shared priorities: importance >= 3 AND alignment >= 0.5 -> i1 and i2 only.
+    expect(result.sharedPriorityCount).toBe(2);
+  });
+
+  it("orders the breakdown by importance then alignment", () => {
+    const voter: VoterStanceInput[] = [
+      { issueId: "low", issueName: "Low", position: 2, importance: 1 },
+      { issueId: "highAgree", issueName: "High Agree", position: 2, importance: 5 },
+      { issueId: "highDisagree", issueName: "High Disagree", position: 2, importance: 5 },
+    ];
+    const positions: CandidatePositionInput[] = [
+      { issueId: "low", issueName: "Low", position: 2, confidence: 1, summary: "" },
+      { issueId: "highAgree", issueName: "High Agree", position: 2, confidence: 1, summary: "" },
+      { issueId: "highDisagree", issueName: "High Disagree", position: -2, confidence: 1, summary: "" },
+    ];
+    const result = computeMatch(voter, positions);
+    expect(result.breakdown.map((b) => b.issueId)).toEqual([
+      "highAgree",
+      "highDisagree",
+      "low",
+    ]);
   });
 });
