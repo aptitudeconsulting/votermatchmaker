@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, notInArray } from "drizzle-orm";
 import {
   db,
   pool,
   issuesTable,
   questionsTable,
+  voterAnswersTable,
   candidatesTable,
   candidatePositionsTable,
   candidateRecordsTable,
@@ -48,6 +49,9 @@ async function seedQuestions() {
         },
       });
   }
+  const keepIds = QUESTIONS.map((q) => q.id);
+  await db.delete(voterAnswersTable).where(notInArray(voterAnswersTable.questionId, keepIds));
+  await db.delete(questionsTable).where(notInArray(questionsTable.id, keepIds));
   logger.info(`Seeded ${QUESTIONS.length} questions`);
 }
 

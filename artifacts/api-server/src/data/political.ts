@@ -40,10 +40,10 @@ export const ISSUES: InsertIssue[] = [
   },
   {
     id: "climate",
-    name: "Climate & Energy",
-    shortLabel: "Climate",
+    name: "Energy & Environment",
+    shortLabel: "Energy",
     description:
-      "Climate change, environmental regulation, and the country's energy mix.",
+      "The country's energy mix, environmental rules, and how it balances cost and conservation.",
     icon: "leaf",
     displayOrder: 4,
   },
@@ -67,9 +67,9 @@ export const ISSUES: InsertIssue[] = [
   },
   {
     id: "abortion",
-    name: "Reproductive Rights",
+    name: "Abortion",
     shortLabel: "Abortion",
-    description: "Access to abortion and reproductive healthcare.",
+    description: "Abortion law, access, and restrictions.",
     icon: "stethoscope",
     displayOrder: 7,
   },
@@ -93,8 +93,8 @@ export const ISSUES: InsertIssue[] = [
   },
   {
     id: "civil-rights",
-    name: "Civil Rights & Equality",
-    shortLabel: "Civil Rights",
+    name: "Equal Treatment & Discrimination",
+    shortLabel: "Equal Treatment",
     description:
       "Anti-discrimination protections and equal treatment under the law.",
     icon: "users",
@@ -129,45 +129,57 @@ export const ISSUES: InsertIssue[] = [
   },
   {
     id: "democracy",
-    name: "Voting & Democracy",
-    shortLabel: "Democracy",
+    name: "Elections & Voting",
+    shortLabel: "Elections",
     description:
-      "Voting access, election administration, and campaign finance.",
+      "Voting access, election security, and how elections are run.",
     icon: "vote",
     displayOrder: 14,
   },
 ];
 
-const SCALE_OPTIONS = [
-  { value: -2, label: "Strongly disagree" },
-  { value: -1, label: "Disagree" },
-  { value: 0, label: "Unsure / Neutral" },
-  { value: 1, label: "Agree" },
-  { value: 2, label: "Strongly agree" },
-];
+const CHOICE_HELP = "Pick the statement closest to your view.";
 
 /**
- * Onboarding questions. Each statement is phrased toward the issue's "+" pole,
- * so an "agree" answer (+) places the voter on that pole. `kind: "choice"`
- * questions present nuanced options that each carry a position value.
+ * Onboarding questions. Every question is a balanced multiple choice so neither
+ * pole is ever the default "agree." Each option is stated in the proud words its
+ * own believers would use — never the other side's caricature. Options are
+ * ordered "+" pole, middle, "-" pole on the internal axis; the order and wording
+ * are intentionally non-partisan and are never shown to users as left/right.
  */
 export const QUESTIONS: InsertQuestion[] = [
   {
     id: "economy-1",
     issueId: "economy",
-    prompt:
-      "Government should invest more in public programs and services, even if it means higher taxes on high earners.",
-    helpText:
-      "This weighs an active, well-funded government against lower taxes and a smaller public sector.",
-    kind: "scale",
+    prompt: "On taxes and the size of government, which comes closest to your view?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 1,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Invest and tax the top",
+        description:
+          "Fund public programs and services, with higher taxes on high earners.",
+      },
+      {
+        value: 0,
+        label: "A balance of both",
+        description: "Some public investment, some tax relief — depends on the program.",
+      },
+      {
+        value: -2,
+        label: "Lower taxes, smaller government",
+        description:
+          "Let people keep more of what they earn and shrink the public sector.",
+      },
+    ],
   },
   {
     id: "economy-2",
     issueId: "economy",
     prompt: "When it comes to business, the bigger concern is...",
-    helpText: "Pick the statement closest to your view.",
+    helpText: CHOICE_HELP,
     kind: "choice",
     displayOrder: 2,
     options: [
@@ -191,30 +203,60 @@ export const QUESTIONS: InsertQuestion[] = [
   {
     id: "healthcare-1",
     issueId: "healthcare",
-    prompt:
-      "The government should guarantee health coverage for all Americans, even through a larger public role.",
-    helpText:
-      "This contrasts a government coverage guarantee with a mainly private, market-based system.",
-    kind: "scale",
+    prompt: "What's the right role for government in healthcare?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 3,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Guarantee coverage for all",
+        description: "Government should make sure every American can get and afford care.",
+      },
+      {
+        value: 0,
+        label: "A mix of both",
+        description: "Keep private coverage, but expand public help where it's needed.",
+      },
+      {
+        value: -2,
+        label: "Mostly private",
+        description:
+          "Care works best through private choice and competition, not government control.",
+      },
+    ],
   },
   {
     id: "immigration-1",
     issueId: "immigration",
     prompt:
-      "There should be an accessible path to citizenship for undocumented immigrants already living here.",
-    helpText:
-      "This weighs expanded legal pathways against stricter enforcement and border restriction.",
-    kind: "scale",
+      "For undocumented immigrants already living here, what's the right approach?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 4,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "A path to citizenship",
+        description: "Offer fair, accessible legal status to those already here.",
+      },
+      {
+        value: 0,
+        label: "Case by case",
+        description: "Legal status for some, paired with stronger enforcement.",
+      },
+      {
+        value: -2,
+        label: "Enforcement first",
+        description: "Prioritize enforcing the law over new legal pathways.",
+      },
+    ],
   },
   {
     id: "immigration-2",
     issueId: "immigration",
     prompt: "On border security and immigration levels, you lean toward...",
-    helpText: "Pick the statement closest to your view.",
+    helpText: CHOICE_HELP,
     kind: "choice",
     displayOrder: 5,
     options: [
@@ -238,134 +280,283 @@ export const QUESTIONS: InsertQuestion[] = [
   {
     id: "climate-1",
     issueId: "climate",
-    prompt:
-      "The government should act decisively to cut emissions and accelerate the shift to clean energy, even at a cost to some industries.",
-    helpText:
-      "This weighs ambitious climate action against protecting existing energy jobs and minimizing regulation.",
-    kind: "scale",
+    prompt: "How should the country balance energy and the environment?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 6,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Act urgently on emissions",
+        description: "Aggressively cut emissions and lead the shift to clean energy.",
+      },
+      {
+        value: 0,
+        label: "Balance both",
+        description: "Move toward cleaner energy while protecting affordability and jobs.",
+      },
+      {
+        value: -2,
+        label: "Affordability and jobs first",
+        description: "Keep energy affordable and reliable; don't over-rely on regulation.",
+      },
+    ],
   },
   {
     id: "education-1",
     issueId: "education",
-    prompt:
-      "We should increase public funding for schools and make college more affordable through government support.",
-    helpText:
-      "This contrasts greater public investment with school choice and reduced federal involvement.",
-    kind: "scale",
+    prompt: "What should drive education policy?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 7,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Invest in public schools",
+        description: "More public funding for schools and more affordable college.",
+      },
+      {
+        value: 0,
+        label: "Both matter",
+        description: "Strong public schools and more options for parents.",
+      },
+      {
+        value: -2,
+        label: "Choice and local control",
+        description: "Empower parents with school choice and keep decisions local.",
+      },
+    ],
   },
   {
     id: "guns-1",
     issueId: "guns",
-    prompt:
-      "We need stronger gun laws, such as universal background checks and limits on certain firearms.",
-    helpText:
-      "This weighs tighter firearm regulation against protecting broad gun ownership rights.",
-    kind: "scale",
+    prompt: "On guns, where do you land?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 8,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Stronger gun laws",
+        description: "Measures like background checks help prevent violence.",
+      },
+      {
+        value: 0,
+        label: "Some limits, protect rights",
+        description: "Targeted safety rules while protecting lawful ownership.",
+      },
+      {
+        value: -2,
+        label: "Protect gun rights",
+        description: "The right to keep and bear arms shouldn't be infringed.",
+      },
+    ],
   },
   {
     id: "abortion-1",
     issueId: "abortion",
-    prompt:
-      "Abortion should remain legal and accessible, with the decision left to the individual.",
-    helpText:
-      "This contrasts protecting abortion access with placing greater restrictions on it.",
-    kind: "scale",
+    prompt: "On abortion, which is closest to your view?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 9,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Legal, the woman decides",
+        description: "Abortion should be legal, with the decision left to the woman.",
+      },
+      {
+        value: 0,
+        label: "Legal with limits",
+        description: "Legal in some cases, restricted in others.",
+      },
+      {
+        value: -2,
+        label: "Protect unborn life",
+        description: "Unborn life deserves legal protection.",
+      },
+    ],
   },
   {
     id: "criminal-justice-1",
     issueId: "criminal-justice",
-    prompt:
-      "Criminal justice should focus more on rehabilitation and reducing incarceration than on tougher sentencing.",
-    helpText:
-      "This weighs reform and rehabilitation against a tough-on-crime, enforcement-first approach.",
-    kind: "scale",
+    prompt: "What should criminal justice prioritize?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 10,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Reform and rehabilitation",
+        description: "Focus on rehabilitation and reducing incarceration.",
+      },
+      {
+        value: 0,
+        label: "Safety and reform",
+        description: "Firm enforcement paired with reform where it works.",
+      },
+      {
+        value: -2,
+        label: "Safety and enforcement",
+        description:
+          "Back law enforcement and firm consequences to keep communities safe.",
+      },
+    ],
   },
   {
     id: "foreign-policy-1",
     issueId: "foreign-policy",
-    prompt:
-      "The U.S. should rely more on diplomacy and less on military spending and intervention abroad.",
-    helpText:
-      "This contrasts diplomacy and a leaner military with a larger defense posture and active intervention.",
-    kind: "scale",
+    prompt: "What should guide America's role abroad?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 11,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Diplomacy and restraint",
+        description: "Lead with diplomacy and avoid costly intervention.",
+      },
+      {
+        value: 0,
+        label: "Strength and diplomacy",
+        description: "Use both, depending on the situation.",
+      },
+      {
+        value: -2,
+        label: "Strong military leadership",
+        description:
+          "A strong military and active leadership keep us and our allies secure.",
+      },
+    ],
   },
   {
     id: "civil-rights-1",
     issueId: "civil-rights",
-    prompt:
-      "The federal government should do more to protect against discrimination and expand civil rights protections.",
-    helpText:
-      "This weighs expanded federal protections against a more limited federal role.",
-    kind: "scale",
+    prompt: "On discrimination and equal treatment, which comes closer?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 12,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Expand protections",
+        description:
+          "Government should actively protect against discrimination and expand protections.",
+      },
+      {
+        value: 0,
+        label: "About right today",
+        description: "Keep existing protections without major changes.",
+      },
+      {
+        value: -2,
+        label: "Equal rules for all",
+        description:
+          "Equal treatment means the same rules for everyone, without new mandates.",
+      },
+    ],
   },
   {
     id: "housing-1",
     issueId: "housing",
-    prompt:
-      "Government should invest heavily in affordable housing and strengthen protections for renters.",
-    helpText:
-      "This contrasts public investment and tenant protections with a market-led, deregulated approach.",
-    kind: "scale",
+    prompt: "How should we tackle housing costs?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 13,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Invest and protect renters",
+        description:
+          "Public investment in affordable housing and stronger renter protections.",
+      },
+      {
+        value: 0,
+        label: "Build more and protect renters",
+        description: "Both more supply and protections for renters.",
+      },
+      {
+        value: -2,
+        label: "Let the market build",
+        description: "Cut regulation and zoning barriers so the market can build more homes.",
+      },
+    ],
   },
   {
     id: "labor-1",
     issueId: "labor",
-    prompt:
-      "The federal minimum wage should be raised significantly.",
-    helpText:
-      "This is only about the wage floor — it weighs a higher minimum wage against letting the market set pay.",
-    kind: "scale",
+    prompt: "What's better for workers?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
     displayOrder: 14,
-    options: SCALE_OPTIONS,
-  },
-  {
-    id: "labor-2",
-    issueId: "labor",
-    prompt:
-      "Laws should make it easier for workers to organize and join unions.",
-    helpText:
-      "This is only about unions — it weighs stronger collective-bargaining rights against a more business-friendly approach.",
-    kind: "scale",
-    displayOrder: 15,
-    options: SCALE_OPTIONS,
+    options: [
+      {
+        value: 2,
+        label: "Stronger unions and wages",
+        description: "Strengthen unions and raise wages to give workers more power.",
+      },
+      {
+        value: 0,
+        label: "A balance",
+        description: "Support workers without overburdening employers.",
+      },
+      {
+        value: -2,
+        label: "Flexible labor markets",
+        description:
+          "Right-to-work freedom and flexibility help workers and employers alike.",
+      },
+    ],
   },
   {
     id: "technology-1",
     issueId: "technology",
-    prompt:
-      "Large technology companies should face stronger regulation and stricter data-privacy rules.",
-    helpText:
-      "This contrasts stronger tech oversight with a lighter-touch, innovation-first approach.",
-    kind: "scale",
-    displayOrder: 16,
-    options: SCALE_OPTIONS,
+    prompt: "How should government treat big tech?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
+    displayOrder: 15,
+    options: [
+      {
+        value: 2,
+        label: "Regulate and protect privacy",
+        description: "Rein in big tech with stronger rules and privacy protections.",
+      },
+      {
+        value: 0,
+        label: "Targeted rules",
+        description: "Regulate clear harms but keep a light touch overall.",
+      },
+      {
+        value: -2,
+        label: "Light-touch, pro-innovation",
+        description: "Minimal rules protect innovation and free expression online.",
+      },
+    ],
   },
   {
     id: "democracy-1",
     issueId: "democracy",
-    prompt:
-      "We should make voting easier and more accessible, such as expanded mail-in and early voting.",
-    helpText:
-      "This weighs expanding voting access against tighter election-security requirements.",
-    kind: "scale",
-    displayOrder: 17,
-    options: SCALE_OPTIONS,
+    prompt: "What should elections prioritize?",
+    helpText: CHOICE_HELP,
+    kind: "choice",
+    displayOrder: 16,
+    options: [
+      {
+        value: 2,
+        label: "Access",
+        description: "Make voting more accessible — expanded early and mail-in voting.",
+      },
+      {
+        value: 0,
+        label: "Access and security",
+        description: "Both easy access and strong safeguards.",
+      },
+      {
+        value: -2,
+        label: "Security",
+        description: "Protect election integrity with safeguards like voter ID.",
+      },
+    ],
   },
 ];
 
