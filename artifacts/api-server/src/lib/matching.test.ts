@@ -2,9 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   applyDonorEvidence,
   applyVoteEvidence,
+  buildMatchSummary,
   computeMatch,
   scoreToGrade,
   type DonorSignalInput,
+  type IssueBreakdown,
+  type MatchComputation,
   type VoteSignalInput,
   type VoterStanceInput,
   type CandidatePositionInput,
@@ -282,6 +285,201 @@ describe("scoreToGrade", () => {
     expect(scoreToGrade(45)).toBe("D");
     expect(scoreToGrade(44)).toBe("F");
     expect(scoreToGrade(0)).toBe("F");
+  });
+});
+
+function breakdownItem(overrides: Partial<IssueBreakdown> = {}): IssueBreakdown {
+  return {
+    issueId: "x",
+    issueName: "X",
+    voterPosition: 2,
+    voterImportance: 3,
+    candidatePosition: 2,
+    candidateConfidence: 1,
+    alignment: 1,
+    summary: null,
+    voteCount: 0,
+    donorTension: false,
+    donorNote: null,
+    donorLean: null,
+    ...overrides,
+  };
+}
+
+function computation(overrides: Partial<MatchComputation> = {}): MatchComputation {
+  return {
+    score: 80,
+    grade: "A-",
+    coverage: 1,
+    breakdown: [breakdownItem()],
+    topAgreements: [],
+    topDisagreements: [],
+    sharedPriorityCount: 0,
+    donorTensionCount: 0,
+    ...overrides,
+  };
+}
+
+describe("buildMatchSummary", () => {
+  it("returns the fallback message when there is no breakdown to assess", () => {
+    const summary = buildMatchSummary(
+      "Jane Doe",
+      computation({ breakdown: [] }),
+    );
+    expect(summary).toBe(
+      "We don't yet have enough of your priorities to assess Jane Doe. Answer a few more questions to sharpen this match.",
+    );
+  });
+
+  describe("strong band (score >= 75)", () => {
+    it("leads with strong alignment and the differ-most clause when both exist", () => {
+      const summary = buildMatchSummary(
+        "Sen. Smith",
+        computation({
+          score: 82,
+          topAgreements: [breakdownItem({ issueName: "Climate", alignment: 1 })],
+          topDisagreements: [
+            breakdownItem({ issueName: "Guns", alignment: -0.5 }),
+          ],
+        }),
+      );
+      expect(summary).toBe(
+        "Strong alignment with your views on Climate. You differ most on Guns.",
+      );
+    });
+
+    it("falls back to a generic strong phrase when there are no agreements", () => {
+      const summary = buildMatchSummary(
+        "Sen. Smith",
+        computation({
+          score: 90,
+          topAgreements: [],
+          topDisagreements: [],
+        }),
+      );
+      expect(summary).toBe("Broadly aligned with your priorities.");
+    });
+  });
+
+  describe("mixed band (55 <= score < 75)", () => {
+    it("describes common ground and real differences when both exist", () => {
+      const summary = buildMatchSummary(
+        "Rep. Lee",
+        computation({
+          score: 60,
+          topAgreements: [breakdownItem({ issueName: "Climate", alignment: 0.8 })],
+          topDisagreements: [
+            breakdownItem({ issueName: "Guns", alignment: 0.1 }),
+          ],
+        }),
+      );
+      expect(summary).toBe(
+        "Common ground on Climate with real differences on Guns.",
+      );
+    });
+
+    it("uses the generic mixed phrasing when there are no agreements or disagreements", () => {
+      const summary = buildMatchSummary(
+        "Rep. Lee",
+        computation({
+          score: 55,
+          topAgreements: [],
+          topDisagreements: [],
+        }),
+      );
+      expect(summary).toBe(
+        "A mixed match with some differences across your priorities.",
+      );
+    });
+  });
+
+  describe("limited band (score < 55)", () => {
+    it("leads with divergence and acknowledges agreement when both exist", () => {
+      const summary = buildMatchSummary(
+        "Cand. Roe",
+        computation({
+          score: 30,
+          topAgreements: [breakdownItem({ issueName: "Climate", alignment: 0.4 })],
+          topDisagreements: [
+            breakdownItem({ issueName: "Guns", alignment: -0.8 }),
+          ],
+        }),
+      );
+      expect(summary).toBe(
+        "Diverges from you on Guns though you do agree on Climate.",
+      );
+    });
+
+    it("uses the limited-alignment fallback and trims the trailing period when nothing stands out", () => {
+      const summary = buildMatchSummary(
+        "Cand. Roe",
+        computation({
+          score: 10,
+          topAgreements: [],
+          topDisagreements: [],
+        }),
+      );
+      expect(summary).toBe("Limited alignment with your priorities.");
+    });
+  });
+
+  it("ignores top disagreements whose alignment is not below the 0.2 threshold", () => {
+    // A topDisagreement with alignment >= 0.2 is too mild to name in the summary.
+    const summary = buildMatchSummary(
+      "Sen. Smith",
+      computation({
+        score: 80,
+        topAgreements: [breakdownItem({ issueName: "Climate", alignment: 1 })],
+        topDisagreements: [breakdownItem({ issueName: "Guns", alignment: 0.3 })],
+      }),
+    );
+    expect(summary).toBe("Strong alignment with your views on Climate.");
+  });
+
+  describe("joinNames formatting (via the summary)", () => {
+    it("renders a single name with no connectors", () => {
+      const summary = buildMatchSummary(
+        "Sen. Smith",
+        computation({
+          score: 80,
+          topAgreements: [breakdownItem({ issueName: "Climate" })],
+        }),
+      );
+      expect(summary).toBe("Strong alignment with your views on Climate.");
+    });
+
+    it("joins two names with 'and'", () => {
+      const summary = buildMatchSummary(
+        "Sen. Smith",
+        computation({
+          score: 80,
+          topAgreements: [
+            breakdownItem({ issueId: "a", issueName: "Climate" }),
+            breakdownItem({ issueId: "b", issueName: "Guns" }),
+          ],
+        }),
+      );
+      expect(summary).toBe(
+        "Strong alignment with your views on Climate and Guns.",
+      );
+    });
+
+    it("joins three or more names with an Oxford comma", () => {
+      const summary = buildMatchSummary(
+        "Sen. Smith",
+        computation({
+          score: 80,
+          topAgreements: [
+            breakdownItem({ issueId: "a", issueName: "Climate" }),
+            breakdownItem({ issueId: "b", issueName: "Guns" }),
+            breakdownItem({ issueId: "c", issueName: "Taxes" }),
+          ],
+        }),
+      );
+      expect(summary).toBe(
+        "Strong alignment with your views on Climate, Guns, and Taxes.",
+      );
+    });
   });
 });
 
