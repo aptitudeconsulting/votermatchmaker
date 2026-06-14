@@ -83,7 +83,7 @@ export function scoreToGrade(score: number): string {
  * lowers confidence (a money-muddied position weighs less) and raises a tension
  * flag. Positions themselves are never moved.
  */
-function applyDonorEvidence(
+export function applyDonorEvidence(
   candidatePosition: number,
   baseConfidence: number,
   donor: DonorSignalInput | undefined,

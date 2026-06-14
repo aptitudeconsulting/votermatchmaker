@@ -6,3 +6,4 @@
 - [Clerk e2e testing](clerk-e2e-testing.md) — authenticated e2e/sign-up flows need testClerkAuth:true or Turnstile blocks them.
 - [FEC donor signals](fec-donor-signals.md) — second independent signal; adjusts confidence + tension flags only, never moves positions; sectors derived from name keywords, not FEC codes.
 - [Post-merge codegen staleness](post-merge-codegen-staleness.md) — missing @workspace/api-client-react exports after a task merge mean stale generated client; run codegen + typecheck:libs, don't edit app code.
+- [pnpm install reaping](pnpm-install-reaping.md) — backgrounded installs get reaped; run `pnpm install --offline --ignore-scripts` foreground so it finishes in one bash call.
