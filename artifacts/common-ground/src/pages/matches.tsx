@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "wouter";
 import {
   useListMyMatches,
   useGetMyProfile,
@@ -26,7 +26,18 @@ const LEVELS: { value: string; label: string }[] = [
 ];
 
 export default function Matches() {
-  const [level, setLevel] = useState<string>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialLevel = searchParams.get("level") ?? "all";
+  const [level, setLevel] = useState<string>(
+    LEVELS.some((l) => l.value === initialLevel) ? initialLevel : "all",
+  );
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (level !== "all") next.set("level", level);
+    setSearchParams(next, { replace: true });
+  }, [level, setSearchParams]);
+
   const { data: profile } = useGetMyProfile();
   const { data: matches, isLoading } = useListMyMatches(
     level === "all" ? undefined : { level: level as ListMyMatchesLevel },

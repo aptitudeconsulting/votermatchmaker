@@ -23,12 +23,12 @@ import type {
   AnswersInput,
   BadRequestResponse,
   BallotInfo,
-  Candidate,
   CandidateDetail,
   HealthStatus,
   Issue,
   IssueRecordSummary,
   IssueStance,
+  ListCandidates200,
   ListCandidatesParams,
   ListMyMatchesParams,
   ListQuestionsParams,
@@ -750,9 +750,9 @@ export const getListCandidatesUrl = (params?: ListCandidatesParams,) => {
 /**
  * @summary List candidates
  */
-export const listCandidates = async (params?: ListCandidatesParams, options?: RequestInit): Promise<Candidate[]> => {
+export const listCandidates = async (params?: ListCandidatesParams, options?: RequestInit): Promise<ListCandidates200> => {
 
-  return customFetch<Candidate[]>(getListCandidatesUrl(params),
+  return customFetch<ListCandidates200>(getListCandidatesUrl(params),
   {
     ...options,
     method: 'GET'

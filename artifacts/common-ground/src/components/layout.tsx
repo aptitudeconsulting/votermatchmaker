@@ -30,7 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <path d="M12 2L2 12H5V22H19V12H22L12 2Z" fill="currentColor" className="text-primary"/>
               <circle cx="12" cy="14" r="3" fill="currentColor" className="text-primary-foreground" />
             </svg>
-            <span className="font-bold hidden sm:inline-block">Voter Compass</span>
+            <span className="font-bold">Voter Compass</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -107,11 +107,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       
-      <footer className="border-t py-6 md:py-0">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row px-4 md:px-6">
-          <p className="text-sm text-muted-foreground leading-loose text-center">
+      <footer className="border-t py-6">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 md:flex-row px-4 md:px-6">
+          <p className="text-sm text-muted-foreground text-center">
             A non-partisan civic tool. Vote your values.
           </p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link
+              href="/methodology"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/candidates"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Browse candidates
+            </Link>
+            <a
+              href="https://www.congress.gov"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Data sources
+            </a>
+          </nav>
         </div>
       </footer>
     </div>

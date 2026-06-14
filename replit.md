@@ -41,7 +41,8 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - API routes: `artifacts/api-server/src/routes/` (candidates, matches, profile, issues, questions, stats)
 - Issue + question seed data: `artifacts/api-server/src/data/political.ts`
 - Congress.gov sync: `artifacts/api-server/src/scripts/sync.ts`
-- Web pages: `artifacts/common-ground/src/pages/`; shared civic UI in `src/components/civic.tsx`; helpers in `src/lib/issue-meta.tsx` and `src/lib/invalidate.ts`
+- Web pages: `artifacts/common-ground/src/pages/` (incl. public `methodology.tsx` — data sources + how positions/votes/donor/AI signals work, linked from the footer); shared civic UI in `src/components/civic.tsx`; helpers in `src/lib/issue-meta.tsx` and `src/lib/invalidate.ts`
+- `GET /candidates` returns `{ items, total }` (not a bare array) so the browse page can show "Showing X of N" + "Load more"; the page debounces search (300ms) and syncs `level`/`q` to the URL via wouter `useSearchParams` (matches page syncs `level` too). Vote-derived copy is chamber-neutral ("floor votes", not "House floor votes") since senators share the same code path.
 
 ## Architecture decisions
 

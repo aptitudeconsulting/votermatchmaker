@@ -16,6 +16,7 @@ import Candidates from "./pages/candidates";
 import CandidateDetail from "./pages/candidate-detail";
 import Profile from "./pages/profile";
 import Ballot from "./pages/ballot";
+import Methodology from "./pages/methodology";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -186,6 +187,7 @@ function AppRoutes() {
             <Route path="/matches" component={() => <ProtectedRoute component={Matches} />} />
             <Route path="/candidates" component={Candidates} />
             <Route path="/candidates/:id" component={CandidateDetail} />
+            <Route path="/methodology" component={Methodology} />
             <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
             <Route path="/ballot" component={() => <ProtectedRoute component={Ballot} />} />
             <Route component={NotFound} />

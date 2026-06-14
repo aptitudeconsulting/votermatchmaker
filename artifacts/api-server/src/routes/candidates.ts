@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, ilike } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike } from "drizzle-orm";
 import {
   db,
   candidatesTable,
@@ -51,14 +51,25 @@ router.get("/candidates", async (req, res): Promise<void> => {
   if (state) conditions.push(eq(candidatesTable.state, state));
   if (q) conditions.push(ilike(candidatesTable.name, `%${q}%`));
 
-  const rows = await db
-    .select()
-    .from(candidatesTable)
-    .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(asc(candidatesTable.name))
-    .limit(limit);
+  const where = conditions.length ? and(...conditions) : undefined;
 
-  const data = ListCandidatesResponse.parse(rows.map(toCandidate));
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(candidatesTable)
+      .where(where)
+      .orderBy(asc(candidatesTable.name))
+      .limit(limit),
+    db
+      .select({ total: count() })
+      .from(candidatesTable)
+      .where(where),
+  ]);
+
+  const data = ListCandidatesResponse.parse({
+    items: rows.map(toCandidate),
+    total,
+  });
   res.json(data);
 });
 

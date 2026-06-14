@@ -498,6 +498,12 @@ export const ListCandidatesLevel = {
   house: 'house',
 } as const;
 
+export type ListCandidates200 = {
+  items: Candidate[];
+  /** Total candidates matching the filter (ignores limit). */
+  total: number;
+};
+
 export type ListMyMatchesParams = {
 level?: ListMyMatchesLevel;
 limit?: number;

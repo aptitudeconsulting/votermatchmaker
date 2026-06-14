@@ -216,7 +216,8 @@ export const ListCandidatesQueryParams = zod.object({
   "limit": zod.coerce.number().optional()
 })
 
-export const ListCandidatesResponseItem = zod.object({
+export const ListCandidatesResponse = zod.object({
+  "items": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "party": zod.string().nullish(),
@@ -232,8 +233,9 @@ export const ListCandidatesResponseItem = zod.object({
   "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
   "dataSource": zod.enum(['congress.gov', 'sample']),
   "isSample": zod.boolean()
+})),
+  "total": zod.number().describe('Total candidates matching the filter (ignores limit).')
 })
-export const ListCandidatesResponse = zod.array(ListCandidatesResponseItem)
 
 
 /**

@@ -27,6 +27,7 @@ export * from './issue';
 export * from './issueRecordSummary';
 export * from './issueStance';
 export * from './issueStanceSource';
+export * from './listCandidates200';
 export * from './listCandidatesLevel';
 export * from './listCandidatesParams';
 export * from './listMyMatchesLevel';
