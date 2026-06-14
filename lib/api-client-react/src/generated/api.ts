@@ -27,6 +27,7 @@ import type {
   CandidateDetail,
   HealthStatus,
   Issue,
+  IssueRecordSummary,
   IssueStance,
   ListCandidatesParams,
   ListMyMatchesParams,
@@ -880,6 +881,88 @@ export function useGetCandidate<TData = Awaited<ReturnType<typeof getCandidate>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCandidateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCandidateIssueSummaryUrl = (id: string,
+    issueId: string,) => {
+
+
+
+
+  return `/api/candidates/${id}/positions/${issueId}/summary`
+}
+
+/**
+ * @summary AI-generated plain-language summary of a candidate's record on one issue
+ */
+export const getCandidateIssueSummary = async (id: string,
+    issueId: string, options?: RequestInit): Promise<IssueRecordSummary> => {
+
+  return customFetch<IssueRecordSummary>(getGetCandidateIssueSummaryUrl(id,issueId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCandidateIssueSummaryQueryKey = (id: string,
+    issueId: string,) => {
+    return [
+    `/api/candidates/${id}/positions/${issueId}/summary`
+    ] as const;
+    }
+
+
+export const getGetCandidateIssueSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getCandidateIssueSummary>>, TError = ErrorType<NotFoundResponse>>(id: string,
+    issueId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCandidateIssueSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCandidateIssueSummaryQueryKey(id,issueId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCandidateIssueSummary>>> = ({ signal }) => getCandidateIssueSummary(id,issueId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id && issueId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCandidateIssueSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCandidateIssueSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getCandidateIssueSummary>>>
+export type GetCandidateIssueSummaryQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary AI-generated plain-language summary of a candidate's record on one issue
+ */
+
+export function useGetCandidateIssueSummary<TData = Awaited<ReturnType<typeof getCandidateIssueSummary>>, TError = ErrorType<NotFoundResponse>>(
+ id: string,
+    issueId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCandidateIssueSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCandidateIssueSummaryQueryOptions(id,issueId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

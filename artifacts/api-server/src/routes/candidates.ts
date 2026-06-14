@@ -6,16 +6,32 @@ import {
   candidatePositionsTable,
   candidateRecordsTable,
   candidateRecordEnrichmentTable,
+  candidateIssueSummariesTable,
   candidateDonorCategoriesTable,
   candidateDonorSignalsTable,
   candidateVoteSignalsTable,
 } from "@workspace/db";
-import { ListCandidatesResponse, GetCandidateResponse } from "@workspace/api-zod";
+import {
+  ListCandidatesResponse,
+  GetCandidateResponse,
+  GetCandidateIssueSummaryResponse,
+} from "@workspace/api-zod";
 import { toCandidate } from "../lib/serialize";
 import { applyVoteEvidence } from "../lib/matching";
+import { generateIssueRecordSummary, type SummaryBill } from "../lib/issueSummary";
 import { ISSUES } from "../data/political";
 
 const ISSUE_NAME = new Map(ISSUES.map((i) => [i.id, i.name]));
+
+/**
+ * In-process single-flight for issue-summary generation. The summary endpoint is
+ * public and a cache miss triggers a paid LLM call, so we coalesce concurrent
+ * misses for the same (candidate, issue) into one generation to avoid cost fan-out.
+ */
+const inflightIssueSummaries = new Map<
+  string,
+  Promise<{ summary: string | null; generatedAt: string | null }>
+>();
 
 const router: IRouter = Router();
 
@@ -39,7 +55,7 @@ router.get("/candidates", async (req, res): Promise<void> => {
     .select()
     .from(candidatesTable)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(candidatesTable.isSample), asc(candidatesTable.name))
+    .orderBy(asc(candidatesTable.name))
     .limit(limit);
 
   const data = ListCandidatesResponse.parse(rows.map(toCandidate));
@@ -203,5 +219,125 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
   });
   res.json(data);
 });
+
+router.get(
+  "/candidates/:id/positions/:issueId/summary",
+  async (req, res): Promise<void> => {
+    const candidateId = String(req.params.id);
+    const issueId = String(req.params.issueId);
+
+    const [candidate] = await db
+      .select({ id: candidatesTable.id })
+      .from(candidatesTable)
+      .where(eq(candidatesTable.id, candidateId));
+    if (!candidate) {
+      res.status(404).json({ error: "Candidate not found" });
+      return;
+    }
+
+    // Serve from cache when present so we only pay the LLM once per (candidate, issue).
+    const [cached] = await db
+      .select()
+      .from(candidateIssueSummariesTable)
+      .where(
+        and(
+          eq(candidateIssueSummariesTable.candidateId, candidateId),
+          eq(candidateIssueSummariesTable.issueId, issueId),
+        ),
+      );
+    if (cached) {
+      res.json(
+        GetCandidateIssueSummaryResponse.parse({
+          issueId,
+          summary: cached.summary,
+          generatedAt: cached.generatedAt,
+        }),
+      );
+      return;
+    }
+
+    // Coalesce concurrent cache-misses for the same key into one generation so we
+    // never fan out into duplicate paid LLM calls.
+    const key = `${candidateId}::${issueId}`;
+    let pending = inflightIssueSummaries.get(key);
+    if (!pending) {
+      pending = (async () => {
+        // Gather the candidate's CURRENT classified bills on this issue (skip
+        // orphaned enrichment left behind by a re-sync) and synthesize a summary.
+        const currentRecordIds = new Set(
+          (
+            await db
+              .select({ id: candidateRecordsTable.id })
+              .from(candidateRecordsTable)
+              .where(eq(candidateRecordsTable.candidateId, candidateId))
+          ).map((r) => r.id),
+        );
+        const enrichmentRows = (
+          await db
+            .select()
+            .from(candidateRecordEnrichmentTable)
+            .where(
+              and(
+                eq(candidateRecordEnrichmentTable.candidateId, candidateId),
+                eq(candidateRecordEnrichmentTable.classifiedIssueId, issueId),
+              ),
+            )
+        ).filter((e) => currentRecordIds.has(e.recordId));
+
+        const bills: SummaryBill[] = enrichmentRows.map((e) => ({
+          billNumber: e.billNumber ?? null,
+          title: e.billTitle ?? "Legislation",
+          kind: e.recordId.includes(":cosponsored:") ? "cosponsored" : "sponsored",
+          summary: e.summary ?? null,
+          rationale: e.rationale ?? null,
+          actionStatus: e.actionStatus ?? null,
+        }));
+
+        const summary = await generateIssueRecordSummary(
+          ISSUE_NAME.get(issueId) ?? issueId,
+          bills,
+        );
+        const generatedAt = summary ? new Date().toISOString() : null;
+        if (summary && generatedAt) {
+          await db
+            .insert(candidateIssueSummariesTable)
+            .values({ candidateId, issueId, summary, model: "gpt-5.4", generatedAt })
+            .onConflictDoUpdate({
+              target: [
+                candidateIssueSummariesTable.candidateId,
+                candidateIssueSummariesTable.issueId,
+              ],
+              set: { summary, model: "gpt-5.4", generatedAt },
+            });
+        }
+        return { summary, generatedAt };
+      })().finally(() => inflightIssueSummaries.delete(key));
+      inflightIssueSummaries.set(key, pending);
+    }
+
+    let result: { summary: string | null; generatedAt: string | null };
+    try {
+      result = await pending;
+    } catch (err) {
+      req.log.error({ err, candidateId, issueId }, "issue summary generation failed");
+      res.json(
+        GetCandidateIssueSummaryResponse.parse({
+          issueId,
+          summary: null,
+          generatedAt: null,
+        }),
+      );
+      return;
+    }
+
+    res.json(
+      GetCandidateIssueSummaryResponse.parse({
+        issueId,
+        summary: result.summary,
+        generatedAt: result.generatedAt,
+      }),
+    );
+  },
+);
 
 export default router;

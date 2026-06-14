@@ -210,7 +210,7 @@ export const ResetMyProfileResponse = zod.object({
  * @summary List candidates
  */
 export const ListCandidatesQueryParams = zod.object({
-  "level": zod.enum(['senate', 'house', 'local']).optional(),
+  "level": zod.enum(['senate', 'house']).optional(),
   "state": zod.coerce.string().optional(),
   "q": zod.coerce.string().optional(),
   "limit": zod.coerce.number().optional()
@@ -327,10 +327,25 @@ export const GetCandidateResponse = zod.object({
 
 
 /**
+ * @summary AI-generated plain-language summary of a candidate's record on one issue
+ */
+export const GetCandidateIssueSummaryParams = zod.object({
+  "id": zod.coerce.string(),
+  "issueId": zod.coerce.string()
+})
+
+export const GetCandidateIssueSummaryResponse = zod.object({
+  "issueId": zod.string(),
+  "summary": zod.string().nullable().describe('AI-generated neutral summary of the candidate\'s bills on this issue. Null when there is no usable legislative evidence or the AI service is unavailable.'),
+  "generatedAt": zod.string().nullable().describe('ISO timestamp when the summary was generated; null when no summary exists.')
+})
+
+
+/**
  * @summary Ranked candidate matches for the signed-in voter
  */
 export const ListMyMatchesQueryParams = zod.object({
-  "level": zod.enum(['senate', 'house', 'local']).optional(),
+  "level": zod.enum(['senate', 'house']).optional(),
   "limit": zod.coerce.number().optional()
 })
 

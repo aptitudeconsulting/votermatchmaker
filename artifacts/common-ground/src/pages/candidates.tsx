@@ -17,7 +17,6 @@ const LEVELS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
   { value: "senate", label: "Senate" },
   { value: "house", label: "House" },
-  { value: "local", label: "Local" },
 ];
 
 export default function Candidates() {
@@ -104,11 +103,6 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
               )}
             </div>
             <p className="truncate text-sm text-muted-foreground">{candidate.currentRole}</p>
-            {candidate.isSample && (
-              <Badge variant="outline" className="mt-1 text-xs">
-                Sample race
-              </Badge>
-            )}
           </div>
           <ArrowRight className="hidden sm:block h-5 w-5 shrink-0 text-muted-foreground" />
         </CardContent>

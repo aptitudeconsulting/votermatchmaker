@@ -12,5 +12,4 @@ export type ListMyMatchesLevel = typeof ListMyMatchesLevel[keyof typeof ListMyMa
 export const ListMyMatchesLevel = {
   senate: 'senate',
   house: 'house',
-  local: 'local',
 } as const;

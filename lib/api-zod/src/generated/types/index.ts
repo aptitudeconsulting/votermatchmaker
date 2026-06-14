@@ -24,6 +24,7 @@ export * from './candidatePosition';
 export * from './donorCategory';
 export * from './healthStatus';
 export * from './issue';
+export * from './issueRecordSummary';
 export * from './issueStance';
 export * from './issueStanceSource';
 export * from './listCandidatesLevel';

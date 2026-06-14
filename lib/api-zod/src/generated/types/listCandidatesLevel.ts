@@ -12,5 +12,4 @@ export type ListCandidatesLevel = typeof ListCandidatesLevel[keyof typeof ListCa
 export const ListCandidatesLevel = {
   senate: 'senate',
   house: 'house',
-  local: 'local',
 } as const;

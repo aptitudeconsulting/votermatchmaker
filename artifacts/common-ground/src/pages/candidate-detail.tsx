@@ -4,6 +4,8 @@ import { Show } from "@clerk/react";
 import {
   useGetCandidate,
   useGetMyMatch,
+  useGetCandidateIssueSummary,
+  getGetCandidateIssueSummaryQueryKey,
   type CandidatePosition,
   type PositionEvidence,
   type RecordItem,
@@ -33,6 +35,7 @@ import {
   ExternalLink,
   FileText,
   Info,
+  Loader2,
   Sparkles,
   Vote,
   Wallet,
@@ -91,11 +94,6 @@ export default function CandidateDetail() {
             {candidate.party && <Badge variant="secondary">{candidate.party}</Badge>}
           </div>
           <p className="text-muted-foreground truncate">{candidate.currentRole}</p>
-          {candidate.isSample && (
-            <Badge variant="outline" className="text-xs">
-              Sample local race
-            </Badge>
-          )}
         </div>
       </div>
 
@@ -120,7 +118,7 @@ export default function CandidateDetail() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {positions.map((p) => (
-              <PositionRow key={p.issueId} position={p} />
+              <PositionRow key={p.issueId} position={p} candidateId={id} />
             ))}
           </div>
         )}
@@ -339,7 +337,13 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
   );
 }
 
-function PositionRow({ position }: { position: CandidatePosition }) {
+function PositionRow({
+  position,
+  candidateId,
+}: {
+  position: CandidatePosition;
+  candidateId: string;
+}) {
   const insufficient = position.insufficientRecord;
   return (
     <Card>
@@ -382,6 +386,9 @@ function PositionRow({ position }: { position: CandidatePosition }) {
         )}
         {position.evidence && position.evidence.length > 0 && (
           <PositionReceipts evidence={position.evidence} />
+        )}
+        {position.sourceCount > 0 && (
+          <RecordSummary candidateId={candidateId} issueId={position.issueId} />
         )}
         <p className="mt-auto pt-1 text-xs text-muted-foreground">
           {[
@@ -451,6 +458,75 @@ function PositionReceipts({ evidence }: { evidence: PositionEvidence[] }) {
             ? "Show fewer"
             : `Show ${evidence.length - 2} more bill${evidence.length - 2 === 1 ? "" : "s"}`}
         </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Lazily fetches an AI-generated plain-language summary of the candidate's bills
+ * on this issue (only on click, so we don't generate for every card). The summary
+ * is cached server-side, and we always keep the auditable receipts above it.
+ */
+function RecordSummary({
+  candidateId,
+  issueId,
+}: {
+  candidateId: string;
+  issueId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const { data, isLoading, isError } = useGetCandidateIssueSummary(
+    candidateId,
+    issueId,
+    {
+      query: {
+        enabled: open,
+        staleTime: Infinity,
+        queryKey: getGetCandidateIssueSummaryQueryKey(candidateId, issueId),
+      },
+    },
+  );
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 self-start rounded-md p-1 text-xs font-medium text-muted-foreground underline hover:text-foreground"
+      >
+        <Sparkles className="h-3 w-3 shrink-0" /> Summarize their record (AI)
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-2">
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Sparkles className="h-3 w-3 shrink-0" /> AI summary of their record
+      </p>
+      {isLoading ? (
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 shrink-0 animate-spin" /> Summarizing…
+        </p>
+      ) : isError ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Couldn't generate a summary right now. Please try again later.
+        </p>
+      ) : data?.summary ? (
+        <>
+          <p className="mt-1 break-words text-xs text-foreground/80">
+            {data.summary}
+          </p>
+          <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+            AI-generated from these bills' official CRS summaries — it can contain
+            errors. Check the linked bills above.
+          </p>
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Not enough bill detail to generate a summary.
+        </p>
       )}
     </div>
   );

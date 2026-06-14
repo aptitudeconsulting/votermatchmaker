@@ -23,7 +23,6 @@ const LEVELS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
   { value: "senate", label: "Senate" },
   { value: "house", label: "House" },
-  { value: "local", label: "Local" },
 ];
 
 export default function Matches() {
@@ -132,11 +131,6 @@ function MatchCard({ match }: { match: MatchResult }) {
               {candidate.party && <Badge variant="secondary">{candidate.party}</Badge>}
               {candidate.upForReelection && (
                 <ReelectionBadge electionYear={candidate.electionYear} />
-              )}
-              {candidate.isSample && (
-                <Badge variant="outline" className="text-xs">
-                  Sample race
-                </Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground truncate">{candidate.currentRole}</p>

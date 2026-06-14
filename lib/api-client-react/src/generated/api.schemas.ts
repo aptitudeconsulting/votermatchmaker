@@ -291,6 +291,20 @@ export interface CandidateDetail {
   hasDonorData: boolean;
 }
 
+export interface IssueRecordSummary {
+  issueId: string;
+  /**
+     * AI-generated neutral summary of the candidate's bills on this issue. Null when there is no usable legislative evidence or the AI service is unavailable.
+     * @nullable
+     */
+  summary: string | null;
+  /**
+     * ISO timestamp when the summary was generated; null when no summary exists.
+     * @nullable
+     */
+  generatedAt: string | null;
+}
+
 export interface MatchIssueBreakdown {
   issueId: string;
   issueName: string;
@@ -482,7 +496,6 @@ export type ListCandidatesLevel = typeof ListCandidatesLevel[keyof typeof ListCa
 export const ListCandidatesLevel = {
   senate: 'senate',
   house: 'house',
-  local: 'local',
 } as const;
 
 export type ListMyMatchesParams = {
@@ -496,6 +509,5 @@ export type ListMyMatchesLevel = typeof ListMyMatchesLevel[keyof typeof ListMyMa
 export const ListMyMatchesLevel = {
   senate: 'senate',
   house: 'house',
-  local: 'local',
 } as const;
 

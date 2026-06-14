@@ -51,7 +51,6 @@ async function loadCandidatesForVoter(
   const rows = await db.select().from(candidatesTable);
   return rows.filter((c) => {
     if (level && c.level !== level) return false;
-    if (c.isSample) return true; // sample races are always shown (clearly labeled)
     if (state && c.state) return c.state === state;
     return !state; // if voter has no state yet, include all congress members
   });

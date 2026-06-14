@@ -2,6 +2,7 @@ export * from "./issues";
 export * from "./questions";
 export * from "./candidates";
 export * from "./candidatePositions";
+export * from "./candidateIssueSummaries";
 export * from "./candidateRecords";
 export * from "./candidateRecordEnrichment";
 export * from "./candidateVotes";
