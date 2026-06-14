@@ -17,9 +17,11 @@ async function buildAll() {
   await esbuild({
     entryPoints: [
       path.resolve(artifactDir, "src/index.ts"),
+      path.resolve(artifactDir, "src/scripts/sync.ts"),
       path.resolve(artifactDir, "src/scripts/syncFec.ts"),
       path.resolve(artifactDir, "src/scripts/syncVotes.ts"),
       path.resolve(artifactDir, "src/scripts/syncSenateVotes.ts"),
+      path.resolve(artifactDir, "src/scripts/enrichProvisions.ts"),
     ],
     platform: "node",
     bundle: true,
