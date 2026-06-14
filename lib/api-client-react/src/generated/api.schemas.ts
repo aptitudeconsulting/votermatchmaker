@@ -172,6 +172,25 @@ export interface VoteExample {
   aligns: boolean;
 }
 
+/**
+ * One clickable receipt behind a derived position — the specific bill or vote that contributed, with a one-line rationale.
+ */
+export interface PositionEvidence {
+  recordId: string;
+  /** @nullable */
+  billNumber: string | null;
+  title: string;
+  /** @nullable */
+  url: string | null;
+  /** "sponsored", "cosponsored", or "vote". */
+  kind: string;
+  /** Internal-axis direction of this piece of evidence (+1 toward the "+" pole, -1 toward the "-" pole, 0 if neutral). */
+  direction: number;
+  rationale: string;
+  /** @nullable */
+  date: string | null;
+}
+
 export interface CandidatePosition {
   issueId: string;
   issueName: string;
@@ -179,6 +198,10 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** True when the legislative record is too thin/contradictory to assess a direction. The UI says so honestly and never falls back to a party prior. */
+  insufficientRecord: boolean;
+  /** The specific contributing bills/votes shown as clickable receipts. */
+  evidence: PositionEvidence[];
   /** Number of actual House roll-call votes behind this position (0 when none). */
   voteCount: number;
   /**

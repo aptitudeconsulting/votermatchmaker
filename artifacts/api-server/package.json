@@ -14,6 +14,8 @@
     "sync:fec:prod": "node --enable-source-maps ./dist/scripts/syncFec.mjs",
     "sync:votes": "tsx src/scripts/syncVotes.ts",
     "sync:votes:prod": "node --enable-source-maps ./dist/scripts/syncVotes.mjs",
+    "sync:senate-votes": "tsx src/scripts/syncSenateVotes.ts",
+    "sync:senate-votes:prod": "node --enable-source-maps ./dist/scripts/syncSenateVotes.mjs",
     "enrich": "tsx src/scripts/enrichProvisions.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"

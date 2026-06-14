@@ -88,7 +88,7 @@ export default function Profile() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="zip">ZIP code</Label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -97,12 +97,13 @@ export default function Profile() {
                   maxLength={5}
                   value={zip}
                   onChange={(e) => setZip(e.target.value.replace(/\D/g, ""))}
-                  className="pl-9"
+                  className="pl-9 w-full"
                 />
               </div>
               <Button
                 onClick={saveLocation}
                 disabled={!zipValid || updateLocation.isPending}
+                className="w-full sm:w-auto h-10"
               >
                 {updateLocation.isPending ? "Saving…" : "Save"}
               </Button>
@@ -147,7 +148,7 @@ export default function Profile() {
 
       <Separator />
 
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
         <div>
           <h3 className="font-medium">Start over</h3>
           <p className="text-sm text-muted-foreground">
@@ -156,11 +157,11 @@ export default function Profile() {
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" className="shrink-0">
+            <Button variant="outline" className="w-full sm:w-auto shrink-0">
               <RotateCcw className="mr-2 h-4 w-4" /> Reset
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="w-[90vw] max-w-lg rounded-xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Reset your profile?</AlertDialogTitle>
               <AlertDialogDescription>
@@ -168,9 +169,9 @@ export default function Profile() {
                 You'll be taken back to onboarding.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleReset} disabled={resetProfile.isPending}>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <AlertDialogCancel className="w-full sm:w-auto mt-0">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReset} disabled={resetProfile.isPending} className="w-full sm:w-auto">
                 {resetProfile.isPending ? "Resetting…" : "Reset"}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -196,9 +197,9 @@ function StanceRow({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{stance.issueName}</span>
-        <span className="text-sm font-medium text-primary">{importanceLabel(value)}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium truncate pr-2 max-w-[60%]">{stance.issueName}</span>
+        <span className="text-sm font-medium text-primary shrink-0">{importanceLabel(value)}</span>
       </div>
       <Slider
         min={1}
@@ -207,6 +208,7 @@ function StanceRow({
         value={[value]}
         onValueChange={(v) => setValue(v[0])}
         onValueCommit={(v) => onChange(v[0])}
+        className="py-2"
       />
     </div>
   );

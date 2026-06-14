@@ -5,6 +5,7 @@ import {
   useGetCandidate,
   useGetMyMatch,
   type CandidatePosition,
+  type PositionEvidence,
   type RecordItem,
   type MatchIssueBreakdown,
   type DonorCategory,
@@ -84,12 +85,12 @@ export default function CandidateDetail() {
           {candidate.photoUrl && <AvatarImage src={candidate.photoUrl} alt={candidate.name} />}
           <AvatarFallback className="text-xl">{initials}</AvatarFallback>
         </Avatar>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">{candidate.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">{candidate.name}</h1>
             {candidate.party && <Badge variant="secondary">{candidate.party}</Badge>}
           </div>
-          <p className="text-muted-foreground">{candidate.currentRole}</p>
+          <p className="text-muted-foreground truncate">{candidate.currentRole}</p>
           {candidate.isSample && (
             <Badge variant="outline" className="text-xs">
               Sample local race
@@ -152,9 +153,11 @@ export default function CandidateDetail() {
         {record.some((r) => r.provisions && r.provisions.length > 0) && (
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
-            Provisions are extracted by AI from each bill's official Congressional
-            Research Service summary. They can contain errors — always check the
-            linked source.
+            <span className="flex-1">
+              Provisions are extracted by AI from each bill's official Congressional
+              Research Service summary. They can contain errors — always check the
+              linked source.
+            </span>
           </p>
         )}
       </section>
@@ -246,21 +249,21 @@ function ProvisionFlagRow({ flag }: { flag: ProvisionFlag }) {
           </Badge>
         )}
       </div>
-      <p className="mt-1.5 text-foreground/90">{flag.text}</p>
-      <div className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1.5 text-foreground/90 break-words">{flag.text}</p>
+      <div className="mt-1 text-xs text-muted-foreground break-words">
         From{" "}
         {flag.url ? (
           <a
             href={flag.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground"
+            className="underline hover:text-foreground break-words"
           >
             {flag.billNumber ? `${flag.billNumber} — ` : ""}
             {flag.billTitle}
           </a>
         ) : (
-          <span>
+          <span className="break-words">
             {flag.billNumber ? `${flag.billNumber} — ` : ""}
             {flag.billTitle}
           </span>
@@ -337,20 +340,38 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
 }
 
 function PositionRow({ position }: { position: CandidatePosition }) {
+  const insufficient = position.insufficientRecord;
   return (
     <Card>
       <CardContent className="flex h-full flex-col gap-2 py-4">
         <div className="flex items-start justify-between gap-2">
           <span className="font-medium leading-tight">{position.issueName}</span>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
             {position.donorTension && <DonorTensionBadge />}
-            <Badge variant="outline" className="text-xs font-normal">
-              {confidenceLabel(position.confidence)}
-            </Badge>
+            {!insufficient && (
+              <Badge variant="outline" className="text-xs font-normal">
+                {confidenceLabel(position.confidence)}
+              </Badge>
+            )}
           </div>
         </div>
-        <PositionScale candidatePosition={position.position} />
-        <p className="text-sm text-muted-foreground">{position.summary}</p>
+        {insufficient ? (
+          <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              Insufficient record to assess
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Not enough clear legislative evidence to place a position. We show
+              the bills below rather than guess.
+            </p>
+          </div>
+        ) : (
+          <>
+            <PositionScale candidatePosition={position.position} />
+            <p className="text-sm text-muted-foreground">{position.summary}</p>
+          </>
+        )}
         {position.donorTension && position.donorNote && (
           <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
             {position.donorNote}
@@ -359,13 +380,16 @@ function PositionRow({ position }: { position: CandidatePosition }) {
         {position.voteExamples && position.voteExamples.length > 0 && (
           <VoteExamples examples={position.voteExamples} />
         )}
+        {position.evidence && position.evidence.length > 0 && (
+          <PositionReceipts evidence={position.evidence} />
+        )}
         <p className="mt-auto pt-1 text-xs text-muted-foreground">
           {[
             position.voteCount > 0
               ? `${position.voteCount} floor vote${position.voteCount === 1 ? "" : "s"}`
               : null,
             position.sourceCount > 0
-              ? `${position.sourceCount} sponsored item${position.sourceCount === 1 ? "" : "s"}`
+              ? `${position.sourceCount} bill${position.sourceCount === 1 ? "" : "s"} on file`
               : null,
           ]
             .filter(Boolean)
@@ -373,6 +397,62 @@ function PositionRow({ position }: { position: CandidatePosition }) {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * "Receipts" — the specific bills behind a derived (or insufficient) position,
+ * each with the one-sentence rationale from its neutral CRS summary and a link
+ * to the source. This is how the score stays auditable.
+ */
+function PositionReceipts({ evidence }: { evidence: PositionEvidence[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? evidence : evidence.slice(0, 2);
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">
+        Why — contributing bills
+      </p>
+      {shown.map((ev) => (
+        <div
+          key={ev.recordId}
+          className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs"
+        >
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="text-xs capitalize">
+              {ev.kind}
+            </Badge>
+            {ev.url ? (
+              <a
+                href={ev.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium underline hover:text-foreground break-all"
+              >
+                {ev.billNumber ?? ev.title}
+                <ExternalLink className="h-3 w-3 shrink-0" />
+              </a>
+            ) : (
+              <span className="font-medium break-all">{ev.billNumber ?? ev.title}</span>
+            )}
+          </div>
+          {ev.rationale && (
+            <p className="mt-1 text-foreground/80 break-words">{ev.rationale}</p>
+          )}
+        </div>
+      ))}
+      {evidence.length > 2 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs font-medium text-muted-foreground underline hover:text-foreground p-1"
+        >
+          {expanded
+            ? "Show fewer"
+            : `Show ${evidence.length - 2} more bill${evidence.length - 2 === 1 ? "" : "s"}`}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -403,12 +483,12 @@ function VoteExamples({ examples }: { examples: VoteExample[] }) {
                 href={ex.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:text-foreground"
+                className="underline hover:text-foreground break-all"
               >
                 {ex.billNumber}
               </a>
             ) : (
-              <span>{ex.billNumber}</span>
+              <span className="break-all">{ex.billNumber}</span>
             )}
             <span className="text-muted-foreground"> — {ex.title}</span>
           </div>
@@ -418,7 +498,7 @@ function VoteExamples({ examples }: { examples: VoteExample[] }) {
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="text-xs font-medium text-muted-foreground underline hover:text-foreground"
+          className="text-xs font-medium text-muted-foreground underline hover:text-foreground p-1"
         >
           {expanded ? "Show fewer votes" : `Show ${examples.length - 2} more vote${examples.length - 2 === 1 ? "" : "s"}`}
         </button>
@@ -447,11 +527,11 @@ function DonorSection({ categories }: { categories: DonorCategory[] }) {
             const pct = total > 0 ? Math.round((c.total / total) * 100) : 0;
             return (
               <div key={c.sector} className="space-y-1">
-                <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="font-medium">{c.label}</span>
-                  <span className="text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="font-medium break-words">{c.label}</span>
+                  <span className="text-muted-foreground flex items-center gap-1.5 flex-wrap justify-end">
                     {formatDollars(c.total)}
-                    <span className="ml-1.5 text-xs">· informs {c.issueName}</span>
+                    <span className="text-xs">· informs {c.issueName}</span>
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -477,38 +557,40 @@ function DonorSection({ categories }: { categories: DonorCategory[] }) {
 
 function RecordRow({ item }: { item: RecordItem }) {
   const content = (
-    <Card className="transition hover-elevate">
-      <CardContent className="flex items-start gap-3 py-4">
-        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="font-medium leading-snug">{item.title}</p>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary" className="text-xs capitalize">
-              {item.kind}
-            </Badge>
-            {item.billNumber && <span>{item.billNumber}</span>}
-            {item.issueName && <span>· {item.issueName}</span>}
-            {item.date && <span>· {item.date}</span>}
-          </div>
-          {item.summary && (
-            <p className="line-clamp-3 text-sm text-muted-foreground">{item.summary}</p>
-          )}
-          {item.provisions && item.provisions.length > 0 && (
-            <div className="space-y-1.5 pt-1">
-              {item.provisions.map((p, i) => (
-                <ProvisionLine key={i} provision={p} />
-              ))}
+    <Card className="transition hover-elevate h-full">
+      <CardContent className="flex flex-col sm:flex-row items-start gap-3 py-4">
+        <div className="flex w-full sm:w-auto items-start gap-3">
+          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="font-medium leading-snug break-words">{item.title}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-xs capitalize">
+                {item.kind}
+              </Badge>
+              {item.billNumber && <span className="break-all">{item.billNumber}</span>}
+              {item.issueName && <span>· {item.issueName}</span>}
+              {item.date && <span>· {item.date}</span>}
             </div>
-          )}
+            {item.summary && (
+              <p className="line-clamp-3 text-sm text-muted-foreground break-words">{item.summary}</p>
+            )}
+            {item.provisions && item.provisions.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                {item.provisions.map((p, i) => (
+                  <ProvisionLine key={i} provision={p} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        {item.url && <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+        {item.url && <ExternalLink className="hidden sm:block mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
       </CardContent>
     </Card>
   );
 
   if (item.url) {
     return (
-      <a href={item.url} target="_blank" rel="noopener noreferrer">
+      <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
         {content}
       </a>
     );
@@ -520,7 +602,7 @@ function ProvisionLine({ provision }: { provision: Provision }) {
   return (
     <div className="rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <Sparkles className="h-3 w-3 text-muted-foreground" />
+        <Sparkles className="h-3 w-3 text-muted-foreground shrink-0" />
         {provision.issueName && (
           <Badge variant="secondary" className="text-xs">
             {provision.issueName}
@@ -532,7 +614,7 @@ function ProvisionLine({ provision }: { provision: Provision }) {
           </Badge>
         )}
       </div>
-      <p className="mt-1 text-xs text-foreground/80">{provision.text}</p>
+      <p className="mt-1 text-xs text-foreground/80 break-words">{provision.text}</p>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import {
   db,
   pool,
   candidatesTable,
-  candidatePositionsTable,
   candidateRecordsTable,
   syncMetaTable,
 } from "@workspace/db";
@@ -11,7 +10,7 @@ import {
   fetchAllCurrentMembers,
   fetchMemberBills,
   fetchTermEndByBioguide,
-  derivePositions,
+  deriveRecords,
   parseMember,
   formatName,
   type RawMember,
@@ -86,7 +85,7 @@ async function upsertCandidate(
   return true;
 }
 
-async function syncPositions(member: RawMember, apiKey: string) {
+async function syncRecords(member: RawMember, apiKey: string) {
   const id = `congress-${member.bioguideId}`;
   let sponsored: RawBill[] = [];
   let cosponsored: RawBill[] = [];
@@ -101,21 +100,10 @@ async function syncPositions(member: RawMember, apiKey: string) {
     logger.warn({ err, bioguideId: member.bioguideId }, "bill fetch failed");
   }
 
-  const { positions, records } = derivePositions(member, sponsored, cosponsored);
-
-  await db
-    .delete(candidatePositionsTable)
-    .where(eq(candidatePositionsTable.candidateId, id));
-  await db.insert(candidatePositionsTable).values(
-    positions.map((p) => ({
-      candidateId: id,
-      issueId: p.issueId,
-      position: p.position,
-      confidence: p.confidence,
-      summary: p.summary,
-      sourceCount: p.sourceCount,
-    })),
-  );
+  // v2 scoring: sync only stores the raw legislative RECORD. Positions are
+  // derived later by the enrichment/classification pass from each bill's neutral
+  // CRS summary — there are no party priors here.
+  const records = deriveRecords(member, sponsored, cosponsored);
 
   await db
     .delete(candidateRecordsTable)
@@ -175,14 +163,14 @@ async function main() {
       saved++;
     }
   }
-  logger.info(`Upserted ${saved} candidates; deriving positions…`);
+  logger.info(`Upserted ${saved} candidates; storing legislative records…`);
 
   let processed = 0;
   for (const m of valid) {
-    await syncPositions(m, apiKey);
+    await syncRecords(m, apiKey);
     processed++;
     if (processed % 25 === 0) {
-      logger.info(`Derived positions for ${processed}/${valid.length}`);
+      logger.info(`Stored records for ${processed}/${valid.length}`);
       await setMeta("sync_progress", `${processed}/${valid.length}`);
     }
     await sleep(120);

@@ -10,10 +10,12 @@ import {
   fetchHouseVoteList,
   fetchHouseVoteDetail,
   fetchHouseVoteMembers,
-  fetchBillMeta,
-  billIssueAndDirection,
+  fetchBillDetail,
+  fetchBillSubjects,
+  fetchBillSummary,
   publicBillUrlFrom,
 } from "../lib/congress";
+import { classifyBillStance } from "../lib/classify";
 import {
   isSubstantivePassageVote,
   isSubstantiveLegislationType,
@@ -125,29 +127,58 @@ async function main() {
       const cacheKey = `${v.legislationType}${v.legislationNumber}`;
       let meta = billCache.get(cacheKey);
       if (meta === undefined) {
-        const billMeta = await fetchBillMeta(
+        const detail = await fetchBillDetail(
           congress,
           v.legislationType,
           v.legislationNumber,
           apiKey,
         );
-        if (!billMeta) {
+        if (!detail) {
           billCache.set(cacheKey, null);
           meta = null;
         } else {
-          const dir = billIssueAndDirection(billMeta.title, billMeta.policyArea);
-          meta = dir
-            ? {
-                issueId: dir.issueId,
-                direction: dir.direction,
-                title: billMeta.title,
-                url: publicBillUrlFrom(
-                  congress,
-                  v.legislationType,
-                  v.legislationNumber,
-                ),
-              }
-            : null;
+          // v2: a voted bill's issue + direction come from its neutral CRS
+          // summary (two-pass classifier), not title keywords. A vote we can't
+          // interpret directionally is simply not counted.
+          const subjects = await fetchBillSubjects(
+            congress,
+            v.legislationType,
+            v.legislationNumber,
+            apiKey,
+          );
+          await sleep(120);
+          const summary = await fetchBillSummary(
+            congress,
+            v.legislationType,
+            v.legislationNumber,
+            apiKey,
+          );
+          await sleep(120);
+          let stance = null;
+          if (summary) {
+            try {
+              stance = await classifyBillStance({
+                title: detail.title,
+                summary,
+                subjects,
+              });
+            } catch (err) {
+              logger.warn({ err, cacheKey }, "vote bill classify failed");
+            }
+          }
+          meta =
+            stance && stance.issueId && stance.direction !== 0
+              ? {
+                  issueId: stance.issueId,
+                  direction: stance.direction,
+                  title: detail.title,
+                  url: publicBillUrlFrom(
+                    congress,
+                    v.legislationType,
+                    v.legislationNumber,
+                  ),
+                }
+              : null;
           billCache.set(cacheKey, meta);
         }
         await sleep(120);

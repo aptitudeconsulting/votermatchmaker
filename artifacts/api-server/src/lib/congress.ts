@@ -1,10 +1,4 @@
-import {
-  POLICY_AREA_MAP,
-  TITLE_KEYWORD_ISSUE,
-  PARTY_PRIORS,
-  ISSUE_LEXICON,
-  ISSUES,
-} from "../data/political";
+import { POLICY_AREA_MAP, SUBJECT_MAP, ISSUES } from "../data/political";
 
 const BASE = "https://api.congress.gov/v3";
 
@@ -38,15 +32,6 @@ export interface DerivedRecord {
   billNumber: string | null;
   congress: number | null;
   url: string | null;
-}
-
-export interface DerivedPosition {
-  issueId: string;
-  issueName: string;
-  position: number;
-  confidence: number;
-  summary: string;
-  sourceCount: number;
 }
 
 const ISSUE_NAME_BY_ID = new Map(ISSUES.map((i) => [i.id, i.name]));
@@ -209,62 +194,50 @@ function publicBillUrl(bill: RawBill): string | null {
   return `https://www.congress.gov/bill/${bill.congress}th-congress/${path}/${bill.number}`;
 }
 
-export function billToIssue(bill: RawBill): string | null {
-  const title = (bill.title ?? "").toLowerCase();
-  for (const { issueId, keywords } of TITLE_KEYWORD_ISSUE) {
-    if (keywords.some((k) => title.includes(k))) return issueId;
+/**
+ * Buckets a bill into one of our canonical issues using Congress's OWN metadata:
+ * first the curated legislative-subjects vocabulary (which uniquely captures guns
+ * and abortion), then the broader policyArea as a fallback. Bill titles are never
+ * used — "titles are marketing." Returns null when nothing matches.
+ *
+ * `subjects` is the list of legislative-subject term names (may be empty; the
+ * sponsored/cosponsored list endpoint only carries policyArea, so the subject
+ * refinement happens later in the enrichment pass which fetches per-bill subjects).
+ */
+export function billToIssue(
+  policyArea: string | null,
+  subjects: string[] = [],
+): string | null {
+  if (subjects.length > 0) {
+    const lowered = subjects.map((s) => s.toLowerCase());
+    // Priority order in SUBJECT_MAP puts the issues with no dedicated policyArea
+    // (guns, abortion) first, so they win over a broader bucket.
+    for (const { issueId, terms } of SUBJECT_MAP) {
+      if (terms.some((t) => lowered.some((s) => s.includes(t)))) return issueId;
+    }
   }
-  const area = bill.policyArea?.name;
-  if (area && POLICY_AREA_MAP[area]) return POLICY_AREA_MAP[area];
+  if (policyArea && POLICY_AREA_MAP[policyArea]) return POLICY_AREA_MAP[policyArea];
   return null;
 }
 
-function partyKey(partyName?: string): "D" | "R" | "I" {
-  const p = (partyName ?? "").toLowerCase();
-  if (p.startsWith("democrat")) return "D";
-  if (p.startsWith("republican")) return "R";
-  return "I";
-}
-
-/** Returns a directional nudge in [-1, 1] from the bill titles' language. */
-function textDirection(issueId: string, titles: string[]): number | null {
-  const lex = ISSUE_LEXICON[issueId];
-  if (!lex) return null;
-  let pos = 0;
-  let neg = 0;
-  for (const t of titles) {
-    const lower = t.toLowerCase();
-    for (const w of lex.pos) if (lower.includes(w)) pos++;
-    for (const w of lex.neg) if (lower.includes(w)) neg++;
-  }
-  if (pos + neg === 0) return null;
-  return (pos - neg) / (pos + neg);
-}
-
-export interface DerivationResult {
-  positions: DerivedPosition[];
-  records: DerivedRecord[];
-}
-
-export function derivePositions(
+/**
+ * Buckets a candidate's sponsored/cosponsored bills into RECORDS only. Positions
+ * are NOT computed here — there are no party priors. Each record's preliminary
+ * issue comes from the bill's policyArea; the enrichment pass later refines it
+ * with the bill's legislative subjects and derives a direction from the CRS
+ * summary. Records with no mappable policyArea are kept (issueId null) so the
+ * enrichment pass can still classify them from subjects + summary.
+ */
+export function deriveRecords(
   member: RawMember,
   sponsored: RawBill[],
   cosponsored: RawBill[],
-): DerivationResult {
-  const pk = partyKey(member.partyName);
+): DerivedRecord[] {
   const records: DerivedRecord[] = [];
-  const titlesByIssue = new Map<string, string[]>();
-  const countByIssue = new Map<string, number>();
 
   const consume = (bills: RawBill[], kind: "sponsored" | "cosponsored") => {
     for (const bill of bills) {
-      const issueId = billToIssue(bill);
-      if (!issueId) continue;
-      countByIssue.set(issueId, (countByIssue.get(issueId) ?? 0) + 1);
-      const arr = titlesByIssue.get(issueId) ?? [];
-      if (bill.title) arr.push(bill.title);
-      titlesByIssue.set(issueId, arr);
-
+      const issueId = billToIssue(bill.policyArea?.name ?? null);
       const billNumber =
         bill.type && bill.number ? `${bill.type} ${bill.number}` : null;
       records.push({
@@ -272,7 +245,7 @@ export function derivePositions(
         title: bill.title ?? "Untitled legislation",
         kind,
         issueId,
-        issueName: ISSUE_NAME_BY_ID.get(issueId) ?? null,
+        issueName: issueId ? (ISSUE_NAME_BY_ID.get(issueId) ?? null) : null,
         date: bill.introducedDate ?? null,
         billNumber,
         congress: bill.congress ?? null,
@@ -284,58 +257,9 @@ export function derivePositions(
   consume(sponsored, "sponsored");
   consume(cosponsored, "cosponsored");
 
-  const positions: DerivedPosition[] = [];
-  for (const issue of ISSUES) {
-    const count = countByIssue.get(issue.id) ?? 0;
-    const prior = PARTY_PRIORS[issue.id]?.[pk] ?? 0;
-    const text = textDirection(issue.id, titlesByIssue.get(issue.id) ?? []);
-
-    // Blend the transparent party prior with real bill-language signal.
-    let position: number;
-    if (text !== null) {
-      position = 0.55 * prior + 0.45 * (text * 2);
-    } else {
-      position = prior;
-    }
-    position = Math.max(-2, Math.min(2, position));
-
-    // Confidence rises with the amount of real legislative activity on the issue.
-    const activityConfidence = Math.min(0.55, count * 0.07);
-    const confidence = count > 0 ? 0.4 + activityConfidence : 0.3;
-
-    const summary = buildPositionSummary(issue.name, count, position);
-    positions.push({
-      issueId: issue.id,
-      issueName: issue.name,
-      position: Math.round(position * 100) / 100,
-      confidence: Math.round(confidence * 100) / 100,
-      summary,
-      sourceCount: count,
-    });
-  }
-
-  // Keep the most recent, issue-tagged records (cap to keep storage reasonable).
+  // Keep the most recent records (cap to keep storage + enrichment reasonable).
   records.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
-  const trimmed = records.slice(0, 18);
-
-  return { positions, records: trimmed };
-}
-
-function buildPositionSummary(
-  issueName: string,
-  count: number,
-  position: number,
-): string {
-  const strength =
-    Math.abs(position) >= 1.3
-      ? "strongly"
-      : Math.abs(position) >= 0.5
-        ? "moderately"
-        : "slightly";
-  if (count === 0) {
-    return `No direct legislative activity found on ${issueName.toLowerCase()}; this estimate uses a transparent party-based baseline only.`;
-  }
-  return `Backed ${count} ${count === 1 ? "bill" : "bills"} touching ${issueName.toLowerCase()}; their record and party lean ${strength} in this direction.`;
+  return records.slice(0, 40);
 }
 
 export function parseMember(member: RawMember): {
@@ -455,48 +379,93 @@ export async function fetchHouseVoteMembers(
     .map((r) => ({ bioguideId: r.bioguideID!, voteCast: r.voteCast! }));
 }
 
-/** Fetches a bill's title + policy area (used to map a voted bill to an issue). */
-export async function fetchBillMeta(
+/** How far a bill advanced, derived from its latest-action text. */
+export type ActionStatus =
+  | "introduced"
+  | "advanced"
+  | "passed"
+  | "law"
+  | "failed";
+
+/** Classifies a bill's latest-action text into a coarse advancement status. */
+export function deriveActionStatus(latestActionText: string | null): ActionStatus {
+  const t = (latestActionText ?? "").toLowerCase();
+  if (!t) return "introduced";
+  if (/became (public|private) law|signed by president|enacted/.test(t))
+    return "law";
+  if (/failed|rejected|motion to table agreed|veto sustained|not agreed/.test(t))
+    return "failed";
+  if (/passed|agreed to in (house|senate)|on passage|resolving differences/.test(t))
+    return "passed";
+  if (
+    /reported|placed on .*calendar|ordered to be reported|committee|markup|cloture|received in the (house|senate)/.test(
+      t,
+    )
+  )
+    return "advanced";
+  return "introduced";
+}
+
+export interface BillDetail {
+  title: string;
+  policyArea: string | null;
+  actionStatus: ActionStatus;
+}
+
+/**
+ * Fetches a bill's title, policy area, and advancement status (from its latest
+ * action). Used both to map a voted bill to an issue and to weight evidence by
+ * how far the bill actually got. Returns null on failure (degrade silently).
+ */
+export async function fetchBillDetail(
   congress: number,
   billType: string,
   billNumber: string,
   apiKey: string,
-): Promise<{ title: string; policyArea: string | null } | null> {
+): Promise<BillDetail | null> {
   const t = billType.toLowerCase();
   try {
     const data = await apiGet<{
-      bill?: { title?: string; policyArea?: { name?: string } };
+      bill?: {
+        title?: string;
+        policyArea?: { name?: string };
+        latestAction?: { text?: string };
+      };
     }>(`/bill/${congress}/${t}/${billNumber}`, apiKey);
     const title = data.bill?.title ?? "";
     if (!title) return null;
-    return { title, policyArea: data.bill?.policyArea?.name ?? null };
+    return {
+      title,
+      policyArea: data.bill?.policyArea?.name ?? null,
+      actionStatus: deriveActionStatus(data.bill?.latestAction?.text ?? null),
+    };
   } catch {
     return null;
   }
 }
 
 /**
- * Maps a bill (by title + policy area) to an issue and a directional sign on
- * that issue's internal axis. Direction is the sign of the title's lexicon
- * language: +1 toward the "+" pole, -1 toward the "-" pole. Returns null when
- * the bill can't be tied to an issue OR has no clear directional language —
- * a vote we can't interpret directionally is simply not counted.
+ * Fetches a bill's legislative subjects (Congress's curated controlled
+ * vocabulary), used for reliable issue bucketing. Returns [] on failure.
  */
-export function billIssueAndDirection(
-  title: string,
-  policyArea: string | null,
-): { issueId: string; direction: number } | null {
-  const bill: RawBill = {
-    title,
-    policyArea: policyArea ? { name: policyArea } : undefined,
-  };
-  const issueId = billToIssue(bill);
-  if (!issueId) return null;
-  const text = textDirection(issueId, [title]);
-  if (text === null) return null;
-  const direction = Math.sign(text);
-  if (direction === 0) return null;
-  return { issueId, direction };
+export async function fetchBillSubjects(
+  congress: number,
+  billType: string,
+  billNumber: string,
+  apiKey: string,
+): Promise<string[]> {
+  const t = billType.toLowerCase();
+  try {
+    const data = await apiGet<{
+      subjects?: { legislativeSubjects?: { name?: string }[] };
+    }>(`/bill/${congress}/${t}/${billNumber}/subjects?limit=250`, apiKey);
+    const subs = data.subjects?.legislativeSubjects ?? [];
+    return subs
+      .map((s) => s.name)
+      .filter((n): n is string => typeof n === "string" && n.length > 0);
+  } catch {
+    return [];
+  }
 }
 
 export function publicBillUrlFrom(

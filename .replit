@@ -32,6 +32,10 @@ args = "Provisions Sync"
 task = "workflow.run"
 args = "House Votes Sync"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Senate Votes Sync"
+
 [[workflows.workflow]]
 name = "Congress Sync"
 author = "agent"
@@ -72,6 +76,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run sync:votes"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Senate Votes Sync"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run sync:senate-votes"
 
 [workflows.workflow.metadata]
 outputType = "console"

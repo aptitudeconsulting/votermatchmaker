@@ -72,10 +72,10 @@ export default function Matches() {
         </Card>
       ) : (
         <>
-          <Tabs value={level} onValueChange={setLevel} className="mt-6">
-            <TabsList>
+          <Tabs value={level} onValueChange={setLevel} className="mt-6 w-full sm:w-auto overflow-x-auto">
+            <TabsList className="w-full justify-start sm:w-auto overflow-x-auto h-12 flex-nowrap shrink-0">
               {LEVELS.map((l) => (
-                <TabsTrigger key={l.value} value={l.value}>
+                <TabsTrigger key={l.value} value={l.value} className="whitespace-nowrap min-w-16">
                   {l.label}
                 </TabsTrigger>
               ))}
@@ -122,7 +122,7 @@ function MatchCard({ match }: { match: MatchResult }) {
     <Link href={`/candidates/${candidate.id}`}>
       <Card className="transition hover-elevate">
         <CardContent className="flex flex-col gap-5 py-5 sm:flex-row sm:items-center">
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="flex shrink-0 items-center justify-center gap-4">
             <ScoreRing score={score} grade={grade} />
           </div>
 
@@ -139,8 +139,8 @@ function MatchCard({ match }: { match: MatchResult }) {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{candidate.currentRole}</p>
-            <p className="text-sm">{summary}</p>
+            <p className="text-sm text-muted-foreground truncate">{candidate.currentRole}</p>
+            <p className="text-sm break-words">{summary}</p>
 
             <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
               {topAgreements[0] && (
@@ -195,9 +195,9 @@ function DonorSummary({
 }) {
   if (categories.length === 0 && tensions.length === 0) return null;
   return (
-    <div className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-3">
+    <div className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-3 overflow-hidden">
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <Wallet className="h-3.5 w-3.5" />
+        <Wallet className="h-3.5 w-3.5 shrink-0" />
         Who funds them
       </div>
       {categories.length > 0 && (
@@ -205,10 +205,10 @@ function DonorSummary({
           {categories.map((c) => (
             <span
               key={c.sector}
-              className="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-0.5 text-xs"
+              className="inline-flex flex-wrap items-center gap-1.5 rounded-full border bg-background px-2.5 py-0.5 text-xs"
             >
-              <span className="font-medium">{c.label}</span>
-              <span className="text-muted-foreground">
+              <span className="font-medium break-all">{c.label}</span>
+              <span className="text-muted-foreground whitespace-nowrap">
                 {formatDollars(c.total)} · informs {c.issueName}
               </span>
             </span>
@@ -217,8 +217,8 @@ function DonorSummary({
       )}
       {tensions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-          <DonorTensionBadge count={tensions.length} />
-          <span className="text-muted-foreground">on {joinNames(tensions)}</span>
+          <DonorTensionBadge count={tensions.length} className="shrink-0" />
+          <span className="text-muted-foreground break-words">on {joinNames(tensions)}</span>
         </div>
       )}
       <p className="text-[11px] text-muted-foreground">

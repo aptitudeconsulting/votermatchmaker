@@ -24,11 +24,12 @@ export interface VoteExample {
 }
 
 /**
- * Per candidate, per issue, the position DERIVED FROM ACTUAL HOUSE ROLL-CALL
- * VOTES (a member's recorded Yea/Nay on bills mapped to an issue + direction).
- * This is the strongest legislative-behavior signal; at read time it is blended
- * into (and dominates) the sponsorship/party-prior base position. House members
- * only — Senate has no roll-call ingest yet, so it stays sponsorship-derived.
+ * Per candidate, per issue, the position DERIVED FROM ACTUAL ROLL-CALL VOTES
+ * (a member's recorded Yea/Nay on bills mapped to an issue + direction). This is
+ * the strongest legislative-behavior signal; at read time it is blended into
+ * (and dominates) the sponsorship-derived base position. Both chambers feed this
+ * table: the House from Congress.gov, the Senate from senate.gov LIS XML (with a
+ * Voteview fallback) since the Senate has no Congress.gov roll-call API.
  */
 export const candidateVoteSignalsTable = pgTable(
   "candidate_vote_signals",

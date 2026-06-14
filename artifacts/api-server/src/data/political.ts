@@ -592,109 +592,156 @@ export const POLICY_AREA_MAP: Record<string, string> = {
 };
 
 /**
- * Title keyword overrides. Some issues (guns, abortion) don't have a dedicated
- * Congress.gov policy area, so bill titles are scanned for these keywords first.
+ * Maps Congress's legislative-subjects controlled vocabulary (the curated terms
+ * the CRS assigns to each bill) to our canonical issue ids. Subjects are far more
+ * reliable than bill titles ("titles are marketing") and crucially capture issues
+ * that have no dedicated `policyArea` — notably guns and abortion. Matching is
+ * substring/case-insensitive against each subject term, and these priority issues
+ * win over a broader policyArea bucket when present.
  */
-export const TITLE_KEYWORD_ISSUE: { issueId: string; keywords: string[] }[] = [
+export const SUBJECT_MAP: { issueId: string; terms: string[] }[] = [
   {
     issueId: "guns",
-    keywords: ["firearm", "gun ", "guns", "ammunition", "second amendment", "assault weapon"],
+    terms: ["firearms", "gun control", "assault weapon", "ammunition"],
   },
   {
     issueId: "abortion",
-    keywords: ["abortion", "reproductive", "pro-life", "unborn", "roe v", "contraception"],
+    terms: ["abortion", "reproductive", "family planning", "contraception"],
   },
   {
     issueId: "immigration",
-    keywords: ["immigration", "border", "asylum", "daca", "dreamer", "deportation", "visa"],
+    terms: [
+      "immigration",
+      "border security and unlawful immigration",
+      "refugees, asylum, displaced persons",
+      "citizenship and naturalization",
+      "visas",
+      "deportation",
+    ],
   },
   {
     issueId: "climate",
-    keywords: ["climate", "clean energy", "emissions", "carbon", "renewable", "pollution"],
+    terms: [
+      "climate change",
+      "greenhouse gas",
+      "air quality",
+      "alternative and renewable resources",
+      "solar energy",
+      "wind energy",
+      "pollution",
+      "environmental regulatory procedures",
+      "oil and gas",
+      "energy efficiency and conservation",
+    ],
+  },
+  {
+    issueId: "healthcare",
+    terms: [
+      "health care coverage and access",
+      "health programs administration",
+      "medicaid",
+      "medicare",
+      "drug and medical device",
+      "prescription drug",
+      "health insurance",
+    ],
+  },
+  {
+    issueId: "economy",
+    terms: [
+      "taxation",
+      "income tax",
+      "budget",
+      "appropriations",
+      "financial services",
+      "banking and financial institutions regulation",
+      "small business",
+      "commerce",
+    ],
+  },
+  {
+    issueId: "education",
+    terms: [
+      "education",
+      "higher education",
+      "elementary and secondary education",
+      "student aid and college costs",
+      "school",
+    ],
+  },
+  {
+    issueId: "criminal-justice",
+    terms: [
+      "criminal justice",
+      "crime prevention",
+      "law enforcement officers",
+      "sentencing",
+      "correctional facilities and imprisonment",
+      "criminal procedure and sentencing",
+    ],
+  },
+  {
+    issueId: "foreign-policy",
+    terms: [
+      "defense spending",
+      "military operations and strategy",
+      "armed forces and national security",
+      "arms control and nonproliferation",
+      "international affairs",
+      "war and emergency powers",
+    ],
+  },
+  {
+    issueId: "civil-rights",
+    terms: [
+      "civil rights and liberties",
+      "sex, gender, sexual orientation discrimination",
+      "racial and ethnic relations",
+      "discrimination",
+      "disability and health-based discrimination",
+    ],
+  },
+  {
+    issueId: "housing",
+    terms: [
+      "housing and community development",
+      "housing finance and home ownership",
+      "homelessness",
+      "rental housing",
+      "low- and moderate-income housing",
+    ],
+  },
+  {
+    issueId: "labor",
+    terms: [
+      "labor and employment",
+      "labor-management relations",
+      "wages and earnings",
+      "employee benefits and pensions",
+      "worker safety and health",
+    ],
+  },
+  {
+    issueId: "technology",
+    terms: [
+      "computers and information technology",
+      "internet",
+      "right of privacy",
+      "telecommunication",
+      "consumer affairs",
+    ],
+  },
+  {
+    issueId: "democracy",
+    terms: [
+      "elections, voting, political campaign regulation",
+      "voting rights",
+      "campaign finance",
+      "congressional elections",
+      "voter registration",
+    ],
   },
 ];
-
-/**
- * Per-issue, per-party directional prior on the issue's "+" axis (-2..2). These
- * are transparent baselines used when little title signal is available, and they
- * are blended with real bill-text signal. Disclosed to users as methodology.
- */
-export const PARTY_PRIORS: Record<string, { D: number; R: number; I: number }> = {
-  economy: { D: 1.3, R: -1.3, I: 0 },
-  healthcare: { D: 1.5, R: -1.3, I: 0.2 },
-  immigration: { D: 1.2, R: -1.4, I: 0 },
-  climate: { D: 1.6, R: -1.4, I: 0.3 },
-  education: { D: 1.2, R: -1.1, I: 0.1 },
-  guns: { D: 1.4, R: -1.5, I: 0 },
-  abortion: { D: 1.6, R: -1.5, I: 0.2 },
-  "criminal-justice": { D: 1.0, R: -1.1, I: 0.1 },
-  "foreign-policy": { D: 0.6, R: -1.0, I: 0.2 },
-  "civil-rights": { D: 1.4, R: -1.0, I: 0.3 },
-  housing: { D: 1.1, R: -0.9, I: 0.2 },
-  labor: { D: 1.3, R: -1.2, I: 0.2 },
-  technology: { D: 0.7, R: -0.6, I: 0.1 },
-  democracy: { D: 1.3, R: -1.2, I: 0.2 },
-};
-
-/**
- * Compact directional lexicon used to nudge a candidate's derived position based
- * on the actual language of the bills they back. `pos` words push toward the
- * issue's "+" pole, `neg` words toward the "-" pole.
- */
-export const ISSUE_LEXICON: Record<string, { pos: string[]; neg: string[] }> = {
-  economy: {
-    pos: ["invest", "expand", "relief", "infrastructure", "fair share", "minimum wage"],
-    neg: ["tax cut", "deregulat", "repeal", "reduce spending", "balanced budget"],
-  },
-  healthcare: {
-    pos: ["expand", "coverage", "affordable care", "medicaid", "lower drug", "public option"],
-    neg: ["repeal", "market", "block grant", "deregulat"],
-  },
-  immigration: {
-    pos: ["citizenship", "dreamer", "daca", "protect", "asylum", "reunif"],
-    neg: ["border security", "enforcement", "deport", "wall", "illegal"],
-  },
-  climate: {
-    pos: ["clean energy", "renewable", "emissions", "climate", "conservation", "carbon"],
-    neg: ["drilling", "fossil", "pipeline", "repeal", "deregulat"],
-  },
-  guns: {
-    pos: ["background check", "safety", "ban", "red flag", "prevent gun"],
-    neg: ["right to carry", "protect second amendment", "constitutional carry", "self-defense"],
-  },
-  abortion: {
-    pos: ["protect", "access", "reproductive freedom", "right to choose"],
-    neg: ["unborn", "pro-life", "ban abortion", "heartbeat", "protect life"],
-  },
-  "criminal-justice": {
-    pos: ["reform", "rehabilitat", "reentry", "expunge", "sentencing reform", "second chance"],
-    neg: ["back the blue", "mandatory minimum", "tough", "law and order"],
-  },
-  "foreign-policy": {
-    pos: ["diplomacy", "withdraw", "war powers", "humanitarian", "peace"],
-    neg: ["defense", "military", "missile", "deterrence", "armed forces"],
-  },
-  "civil-rights": {
-    pos: ["equality", "anti-discrimination", "protect", "voting rights", "lgbt"],
-    neg: ["religious freedom restoration", "states' rights"],
-  },
-  housing: {
-    pos: ["affordable housing", "tenant", "homeless", "rental assistance", "fair housing"],
-    neg: ["deregulat", "zoning reform", "private"],
-  },
-  labor: {
-    pos: ["union", "collective bargaining", "minimum wage", "worker", "paid leave", "overtime"],
-    neg: ["right to work", "flexib", "small business relief"],
-  },
-  technology: {
-    pos: ["privacy", "antitrust", "net neutrality", "data protection", "consumer"],
-    neg: ["innovation", "light-touch", "deregulat"],
-  },
-  democracy: {
-    pos: ["voting rights", "expand", "automatic registration", "mail-in", "access"],
-    neg: ["voter id", "election integrity", "security", "citizenship verification"],
-  },
-};
 
 /**
  * Plain-language description of each issue's two poles on the internal axis,

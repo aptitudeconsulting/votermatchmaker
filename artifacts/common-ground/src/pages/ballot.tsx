@@ -29,18 +29,18 @@ function ResourceCard({ resource }: { resource: BallotResource }) {
       href={resource.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block"
+      className="group block h-full"
     >
-      <Card className="h-full transition-colors hover:border-primary/50">
-        <CardContent className="flex h-full flex-col gap-2 p-5">
+      <Card className="h-full transition-colors hover:border-primary/50 flex flex-col">
+        <CardContent className="flex flex-col gap-2 p-5 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <Badge variant="secondary" className="font-normal">
+            <Badge variant="secondary" className="font-normal shrink-0">
               {CATEGORY_LABEL[resource.category] ?? "Resource"}
             </Badge>
-            <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+            <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary mt-0.5" />
           </div>
-          <h3 className="font-semibold leading-snug">{resource.name}</h3>
-          <p className="text-sm text-muted-foreground">{resource.description}</p>
+          <h3 className="font-semibold leading-snug break-words">{resource.name}</h3>
+          <p className="text-sm text-muted-foreground break-words">{resource.description}</p>
         </CardContent>
       </Card>
     </a>
@@ -61,9 +61,11 @@ export default function Ballot() {
         </div>
         {ballot?.location?.stateName && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            {ballot.location.stateName}
-            {ballot.location.zip ? ` · ${ballot.location.zip}` : ""}
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {ballot.location.stateName}
+              {ballot.location.zip ? ` · ${ballot.location.zip}` : ""}
+            </span>
           </div>
         )}
       </div>
@@ -81,7 +83,7 @@ export default function Ballot() {
       {isLoading ? (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full" />
+            <Skeleton key={i} className="h-40 w-full rounded-xl" />
           ))}
         </div>
       ) : (
@@ -98,7 +100,7 @@ export default function Ballot() {
                   </p>
                 </div>
                 <Link href="/profile">
-                  <Button>Go to profile</Button>
+                  <Button className="w-full sm:w-auto mt-2">Go to profile</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -107,7 +109,7 @@ export default function Ballot() {
           {ballot?.liveData?.available && (
             <section className="mt-10">
               <div className="flex items-center gap-2">
-                <Vote className="h-5 w-5 text-primary" />
+                <Vote className="h-5 w-5 text-primary shrink-0" />
                 <h2 className="text-xl font-semibold">
                   {ballot.liveData.electionName ?? "Measures on your ballot"}
                 </h2>
@@ -119,7 +121,7 @@ export default function Ballot() {
               )}
 
               {ballot.measures.length === 0 ? (
-                <p className="mt-4 text-muted-foreground">
+                <p className="mt-4 text-muted-foreground text-sm">
                   No statewide ballot measures are currently listed for your
                   address. Use the resources below to view your full sample ballot.
                 </p>
@@ -130,10 +132,10 @@ export default function Ballot() {
                       <CardHeader>
                         <CardTitle className="flex items-start gap-2 text-lg">
                           <ScrollText className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                          <span>
-                            {m.title}
+                          <span className="min-w-0">
+                            <span className="block break-words">{m.title}</span>
                             {m.subtitle && (
-                              <span className="mt-1 block text-sm font-normal text-muted-foreground">
+                              <span className="mt-1 block text-sm font-normal text-muted-foreground break-words">
                                 {m.subtitle}
                               </span>
                             )}
@@ -142,35 +144,35 @@ export default function Ballot() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {m.summary && (
-                          <p className="text-sm text-muted-foreground">{m.summary}</p>
+                          <p className="text-sm text-muted-foreground break-words">{m.summary}</p>
                         )}
                         {(m.proStatement || m.conStatement) && (
                           <div className="grid gap-3 sm:grid-cols-2">
                             {m.proStatement && (
-                              <div className="rounded-lg border border-green-600/20 bg-green-600/5 p-3">
+                              <div className="rounded-lg border border-green-600/20 bg-green-600/5 p-3 flex flex-col h-full">
                                 <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-green-700">
-                                  <ThumbsUp className="h-4 w-4" /> Argument for
+                                  <ThumbsUp className="h-4 w-4 shrink-0" /> Argument for
                                 </div>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-muted-foreground break-words flex-1">
                                   {m.proStatement}
                                 </p>
                               </div>
                             )}
                             {m.conStatement && (
-                              <div className="rounded-lg border border-red-600/20 bg-red-600/5 p-3">
+                              <div className="rounded-lg border border-red-600/20 bg-red-600/5 p-3 flex flex-col h-full">
                                 <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-red-700">
-                                  <ThumbsDown className="h-4 w-4" /> Argument against
+                                  <ThumbsDown className="h-4 w-4 shrink-0" /> Argument against
                                 </div>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-muted-foreground break-words flex-1">
                                   {m.conStatement}
                                 </p>
                               </div>
                             )}
                           </div>
                         )}
-                        <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-sm pt-2">
                           {m.passageThreshold && (
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground break-words">
                               Passage threshold: {m.passageThreshold}
                             </span>
                           )}
@@ -179,9 +181,9 @@ export default function Ballot() {
                               href={m.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                              className="inline-flex items-center gap-1 font-medium text-primary hover:underline break-all"
                             >
-                              Official text <ExternalLink className="h-3.5 w-3.5" />
+                              Official text <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                             </a>
                           )}
                         </div>
@@ -194,7 +196,7 @@ export default function Ballot() {
           )}
 
           {ballot?.hasLocation && !ballot?.liveData?.available && (
-            <p className="mt-8 text-sm text-muted-foreground">
+            <p className="mt-8 text-sm text-muted-foreground border p-4 rounded-lg bg-muted/20">
               No live ballot measures are available for your area right now. Use the
               official and non-partisan resources below to look up your full sample
               ballot.
@@ -203,14 +205,14 @@ export default function Ballot() {
 
           <section className="mt-10">
             <div className="flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-primary" />
+              <Landmark className="h-5 w-5 text-primary shrink-0" />
               <h2 className="text-xl font-semibold">Non-partisan resources</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               Look up your full sample ballot, research measures, check your
               registration, and find your polling place.
             </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch">
               {ballot?.resources?.map((r) => (
                 <ResourceCard key={r.url} resource={r} />
               ))}

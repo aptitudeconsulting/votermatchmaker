@@ -19,6 +19,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/scripts/syncFec.ts"),
       path.resolve(artifactDir, "src/scripts/syncVotes.ts"),
+      path.resolve(artifactDir, "src/scripts/syncSenateVotes.ts"),
     ],
     platform: "node",
     bundle: true,

@@ -144,10 +144,15 @@ router.get("/candidates/:id", async (req, res): Promise<void> => {
       return {
         issueId,
         issueName,
+        // An issue with no sponsorship position but a real voting record is NOT
+        // insufficient — the votes establish it. Otherwise honor the stored flag.
         position: blended.position,
         confidence: blended.confidence,
         summary,
         sourceCount: p?.sourceCount ?? 0,
+        insufficientRecord:
+          (p?.insufficient ?? true) && !(vote && vote.voteCount > 0),
+        evidence: p?.evidence ?? [],
         voteCount: blended.voteCount,
         voteShare: vote ? vote.agreeShare : null,
         voteExamples: vote ? vote.examples : [],

@@ -11,6 +11,12 @@ export interface CandidatePositionInput {
   position: number;
   confidence: number;
   summary: string;
+  /**
+   * True when the candidate's record is too thin/contradictory to assess a
+   * direction. Insufficient positions are NOT scored — we never guess (or fall
+   * back to a party prior), so the issue simply doesn't count toward the match.
+   */
+  insufficient?: boolean;
 }
 
 /** Donor evidence for one issue. Adjusts confidence and raises tension flags only. */
@@ -180,15 +186,18 @@ export function computeMatch(
     totalImportance += stance.importance;
 
     const cand = positionByIssue.get(stance.issueId);
-    if (!cand) continue;
-
-    // Fold in the actual roll-call record first — votes move the position.
+    // An insufficient (or missing) position is honestly not scored — but if the
+    // candidate has an ACTUAL roll-call record on this issue, votes alone can
+    // still establish a position.
     const vote = voteByIssue.get(stance.issueId);
+    if ((!cand || cand.insufficient) && !(vote && vote.voteCount > 0)) continue;
+    const basePosition = cand && !cand.insufficient ? cand.position : 0;
+    const baseConfidence = cand && !cand.insufficient ? cand.confidence : 0.3;
     const {
       position: votedPosition,
       confidence: votedConfidence,
       voteCount,
-    } = applyVoteEvidence(cand.position, cand.confidence, vote);
+    } = applyVoteEvidence(basePosition, baseConfidence, vote);
 
     const donor = donorByIssue.get(stance.issueId);
     const { confidence: effConfidence, donorTension, donorNote, donorLean } =
@@ -210,7 +219,11 @@ export function computeMatch(
       candidatePosition: votedPosition,
       candidateConfidence: effConfidence,
       alignment,
-      summary: cand.summary || null,
+      summary:
+        (cand && !cand.insufficient ? cand.summary : null) ||
+        (vote && vote.voteCount > 0
+          ? `Derived from ${vote.voteCount} House floor vote${vote.voteCount === 1 ? "" : "s"} on ${stance.issueName.toLowerCase()}.`
+          : null),
       voteCount,
       donorTension,
       donorNote,

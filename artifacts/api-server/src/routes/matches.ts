@@ -74,6 +74,7 @@ async function positionsByCandidate(
       position: r.position,
       confidence: r.confidence,
       summary: r.summary,
+      insufficient: r.insufficient,
     });
     map.set(r.candidateId, arr);
   }

@@ -268,6 +268,17 @@ export const GetCandidateResponse = zod.object({
   "confidence": zod.number(),
   "summary": zod.string(),
   "sourceCount": zod.number(),
+  "insufficientRecord": zod.boolean().describe('True when the legislative record is too thin\/contradictory to assess a direction. The UI says so honestly and never falls back to a party prior.'),
+  "evidence": zod.array(zod.object({
+  "recordId": zod.string(),
+  "billNumber": zod.string().nullable(),
+  "title": zod.string(),
+  "url": zod.string().nullable(),
+  "kind": zod.string().describe('\"sponsored\", \"cosponsored\", or \"vote\".'),
+  "direction": zod.number().describe('Internal-axis direction of this piece of evidence (+1 toward the \"+\" pole, -1 toward the \"-\" pole, 0 if neutral).'),
+  "rationale": zod.string(),
+  "date": zod.string().nullable()
+}).describe('One clickable receipt behind a derived position — the specific bill or vote that contributed, with a one-line rationale.')).describe('The specific contributing bills\/votes shown as clickable receipts.'),
   "voteCount": zod.number().describe('Number of actual House roll-call votes behind this position (0 when none).'),
   "voteShare": zod.number().nullable().describe('Share (0..1) of those votes that fell in the majority direction, or null when no votes.'),
   "voteExamples": zod.array(zod.object({

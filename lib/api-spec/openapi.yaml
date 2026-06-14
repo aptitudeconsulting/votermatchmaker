@@ -555,9 +555,33 @@ components:
           type: boolean
           description: True when this vote pushed toward the issue's "+" pole.
 
+    PositionEvidence:
+      type: object
+      description: One clickable receipt behind a derived position — the specific bill or vote that contributed, with a one-line rationale.
+      required: [recordId, billNumber, title, url, kind, direction, rationale, date]
+      properties:
+        recordId:
+          type: string
+        billNumber:
+          type: ["string", "null"]
+        title:
+          type: string
+        url:
+          type: ["string", "null"]
+        kind:
+          type: string
+          description: '"sponsored", "cosponsored", or "vote".'
+        direction:
+          type: number
+          description: Internal-axis direction of this piece of evidence (+1 toward the "+" pole, -1 toward the "-" pole, 0 if neutral).
+        rationale:
+          type: string
+        date:
+          type: ["string", "null"]
+
     CandidatePosition:
       type: object
-      required: [issueId, issueName, position, confidence, summary, sourceCount, voteCount, voteShare, voteExamples, donorTension, donorNote, donorLean]
+      required: [issueId, issueName, position, confidence, summary, sourceCount, insufficientRecord, evidence, voteCount, voteShare, voteExamples, donorTension, donorNote, donorLean]
       properties:
         issueId:
           type: string
@@ -571,6 +595,14 @@ components:
           type: string
         sourceCount:
           type: integer
+        insufficientRecord:
+          type: boolean
+          description: True when the legislative record is too thin/contradictory to assess a direction. The UI says so honestly and never falls back to a party prior.
+        evidence:
+          type: array
+          description: The specific contributing bills/votes shown as clickable receipts.
+          items:
+            $ref: "#/components/schemas/PositionEvidence"
         voteCount:
           type: integer
           description: Number of actual House roll-call votes behind this position (0 when none).

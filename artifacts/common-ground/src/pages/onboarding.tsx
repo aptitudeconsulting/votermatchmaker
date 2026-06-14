@@ -177,7 +177,7 @@ export default function Onboarding() {
                 </p>
               </div>
               <Button
-                className="w-full"
+                className="w-full h-12"
                 disabled={!zipValid || updateLocation.isPending}
                 onClick={submitLocation}
               >
@@ -203,6 +203,7 @@ export default function Onboarding() {
               <ErrorNote message="We couldn't load the questions. Please check your connection and try again." />
               <Button
                 variant="outline"
+                className="h-12 w-full sm:w-auto"
                 onClick={() => {
                   void refetchQuestions();
                 }}
@@ -219,8 +220,8 @@ export default function Onboarding() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span className="font-medium text-primary">{current.issueName}</span>
-                  <span>
+                  <span className="font-medium text-primary line-clamp-1 mr-2">{current.issueName}</span>
+                  <span className="shrink-0">
                     {qIndex + 1} of {total}
                   </span>
                 </div>
@@ -244,7 +245,7 @@ export default function Onboarding() {
                           type="button"
                           onClick={() => choose(opt.value)}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition hover-elevate",
+                            "flex w-full items-start gap-3 rounded-xl border p-3 md:p-4 text-left transition hover-elevate min-h-[3rem]",
                             selected
                               ? "border-primary bg-primary/5 ring-1 ring-primary"
                               : "border-border",
@@ -252,7 +253,7 @@ export default function Onboarding() {
                         >
                           <span
                             className={cn(
-                              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border mt-0.5",
                               selected
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-muted-foreground/40",
@@ -263,7 +264,7 @@ export default function Onboarding() {
                           <span>
                             <span className="font-medium">{opt.label}</span>
                             {opt.description && (
-                              <span className="block text-sm text-muted-foreground">
+                              <span className="block text-sm text-muted-foreground mt-0.5">
                                 {opt.description}
                               </span>
                             )}
@@ -275,9 +276,10 @@ export default function Onboarding() {
                 </CardContent>
               </Card>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <Button
                   variant="ghost"
+                  className="h-12"
                   disabled={qIndex === 0}
                   onClick={() => {
                     setError(null);
@@ -288,6 +290,7 @@ export default function Onboarding() {
                   Back
                 </Button>
                 <Button
+                  className="h-12"
                   disabled={answers[current.id] === undefined || submitAnswers.isPending}
                   onClick={next}
                 >
@@ -322,13 +325,13 @@ export default function Onboarding() {
                   type="button"
                   onClick={() => togglePriority(s.issueId)}
                   className={cn(
-                    "flex items-center justify-between rounded-xl border p-3 text-left transition hover-elevate",
+                    "flex items-center justify-between rounded-xl border p-3 md:p-4 text-left transition hover-elevate min-h-[3rem]",
                     selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border",
                   )}
                 >
-                  <span className="font-medium">{s.issueName}</span>
+                  <span className="font-medium break-words pr-2">{s.issueName}</span>
                   {selected && (
-                    <span className="flex items-center gap-1 text-xs font-medium text-primary">
+                    <span className="flex items-center gap-1 text-xs font-medium text-primary shrink-0">
                       <Sparkles className="h-3.5 w-3.5" /> Top priority
                     </span>
                   )}
@@ -336,9 +339,9 @@ export default function Onboarding() {
               );
             })}
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
             <span className="text-sm text-muted-foreground">{priorities.size} of 5 selected</span>
-            <Button onClick={finish} disabled={finishing}>
+            <Button onClick={finish} disabled={finishing} className="w-full sm:w-auto h-12">
               {finishing ? "Finishing…" : "See my matches"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

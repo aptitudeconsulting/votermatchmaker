@@ -36,6 +36,7 @@ export * from './matchDetail';
 export * from './matchIssueBreakdown';
 export * from './matchResult';
 export * from './notFoundResponse';
+export * from './positionEvidence';
 export * from './provision';
 export * from './provisionFlag';
 export * from './question';

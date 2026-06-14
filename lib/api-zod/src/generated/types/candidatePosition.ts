@@ -5,6 +5,7 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { PositionEvidence } from './positionEvidence';
 import type { VoteExample } from './voteExample';
 
 export interface CandidatePosition {
@@ -14,6 +15,10 @@ export interface CandidatePosition {
   confidence: number;
   summary: string;
   sourceCount: number;
+  /** True when the legislative record is too thin/contradictory to assess a direction. The UI says so honestly and never falls back to a party prior. */
+  insufficientRecord: boolean;
+  /** The specific contributing bills/votes shown as clickable receipts. */
+  evidence: PositionEvidence[];
   /** Number of actual House roll-call votes behind this position (0 when none). */
   voteCount: number;
   /**

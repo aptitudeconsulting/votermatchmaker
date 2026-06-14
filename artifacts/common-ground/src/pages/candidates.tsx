@@ -40,22 +40,22 @@ export default function Candidates() {
       </div>
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={level} onValueChange={setLevel}>
-          <TabsList>
+        <Tabs value={level} onValueChange={setLevel} className="w-full sm:w-auto overflow-x-auto">
+          <TabsList className="w-full justify-start sm:w-auto overflow-x-auto h-12 flex-nowrap shrink-0">
             {LEVELS.map((l) => (
-              <TabsTrigger key={l.value} value={l.value}>
+              <TabsTrigger key={l.value} value={l.value} className="whitespace-nowrap min-w-16">
                 {l.label}
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
-        <div className="relative sm:w-72">
+        <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or state"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="pl-9"
+            className="pl-9 w-full"
           />
         </div>
       </div>
@@ -88,17 +88,17 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
 
   return (
     <Link href={`/candidates/${candidate.id}`}>
-      <Card className="h-full transition hover-elevate">
+      <Card className="h-full transition hover-elevate flex flex-col justify-center">
         <CardContent className="flex items-center gap-4 py-4">
-          <Avatar className="h-12 w-12">
+          <Avatar className="h-12 w-12 shrink-0">
             {candidate.photoUrl && <AvatarImage src={candidate.photoUrl} alt={candidate.name} />}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate font-semibold">{candidate.name}</h3>
+              <h3 className="truncate font-semibold max-w-full">{candidate.name}</h3>
               {candidate.party && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs shrink-0">
                   {candidate.party}
                 </Badge>
               )}
@@ -110,7 +110,7 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
               </Badge>
             )}
           </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+          <ArrowRight className="hidden sm:block h-5 w-5 shrink-0 text-muted-foreground" />
         </CardContent>
       </Card>
     </Link>
