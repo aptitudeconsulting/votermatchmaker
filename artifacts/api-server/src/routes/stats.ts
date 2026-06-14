@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { sql, eq } from "drizzle-orm";
+import { sql, inArray } from "drizzle-orm";
 import {
   db,
   candidatesTable,
@@ -25,17 +25,34 @@ router.get("/stats/overview", async (_req, res): Promise<void> => {
     .select({ n: sql<number>`count(distinct ${candidatesTable.state})::int` })
     .from(candidatesTable);
 
-  const sync = await db
+  const meta = await db
     .select()
     .from(syncMetaTable)
-    .where(eq(syncMetaTable.key, "last_full_sync"));
+    .where(
+      inArray(syncMetaTable.key, [
+        "last_full_sync",
+        "last_fec_sync",
+        "fec_sync_status",
+      ]),
+    );
+  const metaByKey = new Map(meta.map((m) => [m.key, m.value]));
+
+  const fecStatusRaw = metaByKey.get("fec_sync_status") ?? null;
+  const fecSyncStatus =
+    fecStatusRaw === "running" ||
+    fecStatusRaw === "complete" ||
+    fecStatusRaw === "error"
+      ? fecStatusRaw
+      : null;
 
   const data = GetStatsOverviewResponse.parse({
     candidateCount: candidateCount?.n ?? 0,
     issueCount: issueCount?.n ?? 0,
     recordCount: recordCount?.n ?? 0,
     stateCount: stateCount?.n ?? 0,
-    lastSyncedAt: sync[0]?.value ?? null,
+    lastSyncedAt: metaByKey.get("last_full_sync") ?? null,
+    fecLastSyncedAt: metaByKey.get("last_fec_sync") ?? null,
+    fecSyncStatus,
   });
   res.json(data);
 });

@@ -102,6 +102,10 @@ export default function Home() {
               label="Legislative Records"
             />
           </div>
+          <DataFreshness
+            recordsSyncedAt={stats?.lastSyncedAt ?? null}
+            donorSyncedAt={stats?.fecLastSyncedAt ?? null}
+          />
         </div>
       </section>
 
@@ -218,6 +222,36 @@ export default function Home() {
         </div>
       </section>
     </div>
+  );
+}
+
+function formatSyncedAt(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function DataFreshness({
+  recordsSyncedAt,
+  donorSyncedAt,
+}: {
+  recordsSyncedAt: string | null;
+  donorSyncedAt: string | null;
+}) {
+  const records = formatSyncedAt(recordsSyncedAt);
+  const donor = formatSyncedAt(donorSyncedAt);
+  if (!records && !donor) return null;
+  return (
+    <p className="mt-4 text-center text-xs text-muted-foreground">
+      {records && <>Legislative records updated {records}.</>}
+      {records && donor && " "}
+      {donor && <>Donor funding data updated {donor}.</>}
+    </p>
   );
 }
 

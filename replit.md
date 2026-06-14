@@ -12,6 +12,7 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - `pnpm --filter @workspace/api-server run sync` — pull current members of Congress + their legislative records from Congress.gov (long-running; run as a workflow, not via bash, or it gets reaped)
 - `pnpm --filter @workspace/api-server run sync:fec` — pull FEC campaign-finance donor signals for federal candidates (run as the "FEC Sync" workflow; supports `FEC_SYNC_LIMIT` for resumable batches; degrades silently with no `FEC_API_KEY`)
 - `pnpm --filter @workspace/api-server run enrich` — fetch official CRS bill summaries + AI-extract notable/unrelated provisions for each candidate's bills (run as the "Provisions Sync" workflow; resumable via `PROVISIONS_LIMIT`/`PROVISIONS_PER_CANDIDATE`; degrades silently with no OpenAI integration or `CONGRESS_API_KEY`)
+- `pnpm --filter @workspace/api-server run sync:fec:prod` — production variant of the FEC sync that runs the bundled `dist/scripts/syncFec.mjs` (no `tsx`/devDeps needed). Use this as the run command for a recurring Scheduled Deployment so donor data stays fresh through the cycle.
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
@@ -57,6 +58,8 @@ It also provides a ZIP-based non-partisan Ballot feature: an always-on curated h
 - The `sync` script makes ~1000+ sequential Congress.gov calls and runs for several minutes — run it as a workflow. Background bash processes get reaped when the tool call returns, even with `setsid`/`nohup`.
 - The api-server `dev` script builds once with no watch — restart the workflow after server code changes.
 - FEC `sync:fec` resolves a member's authorized committees (designation P/A), then classifies top committee receipts + itemized individuals by employer. Itemized individuals are dominated by noise employers (NOT EMPLOYED/RETIRED/SELF) — they must be filtered. Conduits (ActBlue/WinRed) and the member's own committees are excluded from the contributor side. Run it as the "FEC Sync" workflow (long-running; ~1-3s/candidate).
+- Donor freshness: the FEC sync writes `last_fec_sync` / `fec_sync_status` / `fec_sync_progress` to `sync_meta`. `GET /api/stats/overview` surfaces `fecLastSyncedAt` + `fecSyncStatus`, and the web home page shows a "Donor funding data updated …" line (hidden until the first FEC sync runs).
+- Keeping donor data fresh on a schedule: set up a Replit **Scheduled Deployment** (Deployments pane → Scheduled — the deployment *type* can only be chosen in the UI, not in code). Build command `pnpm --filter @workspace/api-server run build`, run command `pnpm --filter @workspace/api-server run sync:fec:prod`. Add `FEC_API_KEY` (and optionally `FEC_SYNC_LIMIT` for resumable batches) to the deployment's secrets. Suggested cadence: weekly off-cycle, daily near an election. The job is resumable and rate-limit friendly, so a small `FEC_SYNC_LIMIT` per run still makes steady progress.
 - Do not change the OpenAPI `info.title`; it controls generated filenames.
 
 ## User preferences

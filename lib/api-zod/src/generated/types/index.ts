@@ -45,6 +45,7 @@ export * from './recordItem';
 export * from './recordItemKind';
 export * from './stanceUpdate';
 export * from './statsOverview';
+export * from './statsOverviewFecSyncStatus';
 export * from './unauthorizedResponse';
 export * from './voterLocation';
 export * from './voterProfile';

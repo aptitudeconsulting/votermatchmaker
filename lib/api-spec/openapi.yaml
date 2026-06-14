@@ -776,6 +776,11 @@ components:
           type: integer
         lastSyncedAt:
           type: ["string", "null"]
+        fecLastSyncedAt:
+          type: ["string", "null"]
+        fecSyncStatus:
+          type: ["string", "null"]
+          enum: [running, complete, error, null]
 
     BallotResource:
       type: object

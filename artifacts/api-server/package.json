@@ -10,6 +10,7 @@
     "seed": "tsx src/scripts/seed.ts",
     "sync": "tsx src/scripts/sync.ts",
     "sync:fec": "tsx src/scripts/syncFec.ts",
+    "sync:fec:prod": "node --enable-source-maps ./dist/scripts/syncFec.mjs",
     "enrich": "tsx src/scripts/enrichProvisions.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"

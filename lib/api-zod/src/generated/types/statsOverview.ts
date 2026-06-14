@@ -5,6 +5,7 @@
  * Voter Compass — match voters with candidates by values
  * OpenAPI spec version: 0.1.0
  */
+import type { StatsOverviewFecSyncStatus } from './statsOverviewFecSyncStatus';
 
 export interface StatsOverview {
   candidateCount: number;
@@ -13,4 +14,8 @@ export interface StatsOverview {
   stateCount: number;
   /** @nullable */
   lastSyncedAt?: string | null;
+  /** @nullable */
+  fecLastSyncedAt?: string | null;
+  /** @nullable */
+  fecSyncStatus?: StatsOverviewFecSyncStatus;
 }

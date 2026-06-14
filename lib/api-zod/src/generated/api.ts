@@ -62,7 +62,9 @@ export const GetStatsOverviewResponse = zod.object({
   "issueCount": zod.number(),
   "recordCount": zod.number(),
   "stateCount": zod.number(),
-  "lastSyncedAt": zod.string().nullish()
+  "lastSyncedAt": zod.string().nullish(),
+  "fecLastSyncedAt": zod.string().nullish(),
+  "fecSyncStatus": zod.union([zod.literal('running'),zod.literal('complete'),zod.literal('error'),zod.literal(null)]).nullish()
 })
 
 

@@ -300,6 +300,18 @@ export interface MatchDetail {
   provisionFlags?: ProvisionFlag[];
 }
 
+/**
+ * @nullable
+ */
+export type StatsOverviewFecSyncStatus = typeof StatsOverviewFecSyncStatus[keyof typeof StatsOverviewFecSyncStatus] | null;
+
+
+export const StatsOverviewFecSyncStatus = {
+  running: 'running',
+  complete: 'complete',
+  error: 'error',
+} as const;
+
 export interface StatsOverview {
   candidateCount: number;
   issueCount: number;
@@ -307,6 +319,10 @@ export interface StatsOverview {
   stateCount: number;
   /** @nullable */
   lastSyncedAt?: string | null;
+  /** @nullable */
+  fecLastSyncedAt?: string | null;
+  /** @nullable */
+  fecSyncStatus?: StatsOverviewFecSyncStatus;
 }
 
 export type BallotResourceCategory = typeof BallotResourceCategory[keyof typeof BallotResourceCategory];
