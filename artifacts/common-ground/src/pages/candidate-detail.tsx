@@ -18,6 +18,13 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -34,6 +41,7 @@ import { confidenceLabel } from "@/lib/issue-meta";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   ExternalLink,
   FileText,
   Info,
@@ -105,7 +113,7 @@ export default function CandidateDetail() {
       </div>
 
       <Show when="signed-in">
-        <MatchScorecard candidateId={id} />
+        <MatchScorecard candidateId={id} positions={positions} />
       </Show>
 
       <section className="space-y-4">
@@ -170,7 +178,13 @@ export default function CandidateDetail() {
   );
 }
 
-function MatchScorecard({ candidateId }: { candidateId: string }) {
+function MatchScorecard({
+  candidateId,
+  positions,
+}: {
+  candidateId: string;
+  positions: CandidatePosition[];
+}) {
   const { data, isLoading, isError } = useGetMyMatch(candidateId);
 
   if (isLoading) return <Skeleton className="h-40 w-full rounded-xl" />;
@@ -199,7 +213,11 @@ function MatchScorecard({ candidateId }: { candidateId: string }) {
           </div>
         </div>
         <Separator />
-        <IssueBreakdown items={data.breakdown} />
+        <IssueBreakdown
+          items={data.breakdown}
+          positions={positions}
+          candidateId={candidateId}
+        />
         {data.provisionFlags && data.provisionFlags.length > 0 && (
           <>
             <Separator />
@@ -285,15 +303,35 @@ const TOP_ISSUES = 6;
  * already returned strongest-first, so the lower-priority tail is collapsed
  * behind a toggle to keep the scorecard scannable instead of one long column.
  */
-function IssueBreakdown({ items }: { items: MatchIssueBreakdown[] }) {
+function IssueBreakdown({
+  items,
+  positions,
+  candidateId,
+}: {
+  items: MatchIssueBreakdown[];
+  positions: CandidatePosition[];
+  candidateId: string;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [openIssueId, setOpenIssueId] = useState<string | null>(null);
   const shown = expanded ? items : items.slice(0, TOP_ISSUES);
   const hidden = items.length - shown.length;
+
+  const positionByIssue = new Map(positions.map((p) => [p.issueId, p]));
+  const activeItem = items.find((b) => b.issueId === openIssueId) ?? null;
+  const activePosition = openIssueId
+    ? positionByIssue.get(openIssueId) ?? null
+    : null;
+
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         {shown.map((b) => (
-          <BreakdownRow key={b.issueId} item={b} />
+          <BreakdownRow
+            key={b.issueId}
+            item={b}
+            onOpen={() => setOpenIssueId(b.issueId)}
+          />
         ))}
       </div>
       {items.length > TOP_ISSUES && (
@@ -306,7 +344,101 @@ function IssueBreakdown({ items }: { items: MatchIssueBreakdown[] }) {
           {expanded ? "Show fewer issues" : `Show ${hidden} more issue${hidden === 1 ? "" : "s"}`}
         </Button>
       )}
+
+      <Dialog
+        open={openIssueId !== null}
+        onOpenChange={(o) => !o && setOpenIssueId(null)}
+      >
+        <DialogContent className="max-h-[85vh] gap-4 overflow-y-auto sm:max-w-lg">
+          {activeItem && (
+            <IssueDetailDialog
+              item={activeItem}
+              position={activePosition}
+              candidateId={candidateId}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+/**
+ * The expanded per-issue view shown when a voter clicks a match tile. It pairs
+ * the head-to-head compass with the candidate's full derived position — the
+ * auditable bill receipts, illustrative floor votes, and optional AI summary —
+ * so a single click goes from "Closely aligned" to the evidence behind it.
+ */
+function IssueDetailDialog({
+  item,
+  position,
+  candidateId,
+}: {
+  item: MatchIssueBreakdown;
+  position: CandidatePosition | null;
+  candidateId: string;
+}) {
+  return (
+    <>
+      <DialogHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
+          <DialogTitle>{item.issueName}</DialogTitle>
+          <AlignmentBadge alignment={item.alignment} />
+        </div>
+        <DialogDescription className="sr-only">
+          How your stance on {item.issueName} compares to this candidate, with the
+          legislative evidence behind their position.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">
+          You vs. them
+        </p>
+        <IssueCompass
+          voterPosition={item.voterPosition}
+          candidatePosition={item.candidatePosition}
+        />
+      </div>
+
+      {item.summary && (
+        <p className="text-sm text-muted-foreground">{item.summary}</p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <VoteEvidenceLine voteCount={item.voteCount} />
+        {item.donorTension && <DonorTensionBadge />}
+      </div>
+      {item.donorTension && item.donorNote && (
+        <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          {item.donorNote}
+        </p>
+      )}
+
+      {position && position.voteExamples && position.voteExamples.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">
+            Illustrative floor votes
+          </p>
+          <VoteExamples examples={position.voteExamples} />
+        </div>
+      )}
+
+      {position && position.evidence && position.evidence.length > 0 && (
+        <PositionReceipts evidence={position.evidence} />
+      )}
+
+      {position && position.sourceCount > 0 && (
+        <RecordSummary candidateId={candidateId} issueId={item.issueId} />
+      )}
+
+      {!position && (
+        <p className="text-xs text-muted-foreground">
+          This match is derived from the candidate's floor-voting record on this
+          issue.
+        </p>
+      )}
+    </>
   );
 }
 
@@ -320,9 +452,20 @@ function VoteEvidenceLine({ voteCount }: { voteCount?: number | null }) {
   );
 }
 
-function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
+function BreakdownRow({
+  item,
+  onOpen,
+}: {
+  item: MatchIssueBreakdown;
+  onOpen: () => void;
+}) {
   return (
-    <div className="flex h-full flex-col gap-2 rounded-lg border bg-card p-3">
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`See details for ${item.issueName}`}
+      className="flex h-full flex-col gap-2 rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-medium leading-tight">{item.issueName}</span>
         <AlignmentBadge alignment={item.alignment} />
@@ -340,7 +483,10 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
           {item.donorNote}
         </p>
       )}
-    </div>
+      <span className="flex items-center gap-1 pt-0.5 text-xs font-medium text-primary">
+        View details <ArrowRight className="h-3 w-3" />
+      </span>
+    </button>
   );
 }
 
