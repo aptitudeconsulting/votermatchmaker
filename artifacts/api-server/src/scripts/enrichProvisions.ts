@@ -289,12 +289,25 @@ async function main() {
     { concurrency: 2, retries: 5 },
   );
 
+  // Recompute positions for EVERY candidate that has any classified enrichment —
+  // not just the ones touched this run. A candidate enriched in a PRIOR run that
+  // we don't re-touch here would otherwise keep its stale v1 (prior-based)
+  // positions forever (the old code only recomputed `affected`), so re-runs never
+  // converged and party-prior summaries lingered. Recomputing the full scored set
+  // makes the pipeline idempotent: every enriched candidate ends up v2, and the
+  // purge below drops everyone else.
+  const scoredRows = await db
+    .selectDistinct({ candidateId: candidateRecordEnrichmentTable.candidateId })
+    .from(candidateRecordEnrichmentTable)
+    .where(isNotNull(candidateRecordEnrichmentTable.classifiedIssueId));
+  const scoredIds = scoredRows.map((r) => r.candidateId);
+
   logger.info(
-    `Classification complete: ${stored} stored, ${noSummary} skipped (no CRS summary yet), ${errors} errors. Recomputing positions for ${affected.size} candidates…`,
+    `Classification complete: ${stored} stored (${affected.size} candidates this run), ${noSummary} skipped (no CRS summary yet), ${errors} errors. Recomputing positions for all ${scoredIds.length} scored candidates…`,
   );
 
   let recomputed = 0;
-  for (const candidateId of affected) {
+  for (const candidateId of scoredIds) {
     try {
       await recomputeCandidatePositions(candidateId);
       recomputed++;
@@ -303,15 +316,9 @@ async function main() {
     }
   }
 
-  // One-time/idempotent legacy purge: candidate_positions must ONLY ever hold v2
-  // (classifier-derived) rows. Any candidate with no classified evidence at all
-  // is carrying pre-v2 prior-based positions — delete them so the system never
-  // serves a mixed v1/v2 view.
-  const scoredRows = await db
-    .selectDistinct({ candidateId: candidateRecordEnrichmentTable.candidateId })
-    .from(candidateRecordEnrichmentTable)
-    .where(isNotNull(candidateRecordEnrichmentTable.classifiedIssueId));
-  const scoredIds = scoredRows.map((r) => r.candidateId);
+  // Legacy purge: candidate_positions must ONLY ever hold v2 (classifier-derived)
+  // rows. Any candidate with no classified evidence at all is carrying pre-v2
+  // prior-based positions — delete them so the system never serves a mixed view.
   const purged =
     scoredIds.length > 0
       ? await db

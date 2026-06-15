@@ -62,12 +62,12 @@ outputType = "console"
 name = "Provisions Sync"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm --filter @workspace/api-server run enrich"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PROVISIONS_PER_CANDIDATE=40 pnpm --filter @workspace/api-server run enrich"
 
 [[workflows.workflow]]
 name = "House Votes Sync"
