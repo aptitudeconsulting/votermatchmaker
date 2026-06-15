@@ -14,6 +14,7 @@ import Onboarding from "./pages/onboarding";
 import Matches from "./pages/matches";
 import Candidates from "./pages/candidates";
 import CandidateDetail from "./pages/candidate-detail";
+import Compare from "./pages/compare";
 import Profile from "./pages/profile";
 import Ballot from "./pages/ballot";
 import Methodology from "./pages/methodology";
@@ -185,6 +186,7 @@ function AppRoutes() {
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
             <Route path="/matches" component={() => <ProtectedRoute component={Matches} />} />
+            <Route path="/compare" component={() => <ProtectedRoute component={Compare} />} />
             <Route path="/candidates" component={Candidates} />
             <Route path="/candidates/:id" component={CandidateDetail} />
             <Route path="/methodology" component={Methodology} />

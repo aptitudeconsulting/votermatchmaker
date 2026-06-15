@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addBallotPickBody';
 export * from './answerInput';
 export * from './answersInput';
 export * from './apiError';
@@ -14,6 +15,7 @@ export * from './ballotInfo';
 export * from './ballotLiveData';
 export * from './ballotLiveDataReason';
 export * from './ballotMeasure';
+export * from './ballotPick';
 export * from './ballotResource';
 export * from './ballotResourceCategory';
 export * from './candidate';
@@ -46,10 +48,14 @@ export * from './questionKind';
 export * from './questionOption';
 export * from './recordItem';
 export * from './recordItemKind';
+export * from './stanceAggregate';
+export * from './stanceAggregateItem';
 export * from './stanceUpdate';
 export * from './statsOverview';
 export * from './statsOverviewFecSyncStatus';
 export * from './unauthorizedResponse';
 export * from './voteExample';
+export * from './voteFeed';
+export * from './voteFeedItem';
 export * from './voterLocation';
 export * from './voterProfile';

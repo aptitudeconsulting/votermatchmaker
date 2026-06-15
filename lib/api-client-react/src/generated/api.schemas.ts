@@ -399,6 +399,21 @@ export interface StatsOverview {
   fecSyncStatus?: StatsOverviewFecSyncStatus;
 }
 
+export interface StanceAggregateItem {
+  issueId: string;
+  issueName: string;
+  /** Number of voters who have a recorded stance on this issue. */
+  voterCount: number;
+  /** Mean of voters' internal-axis positions (-2..+2) on this issue. Never shown as left/right. */
+  meanPosition: number;
+}
+
+export interface StanceAggregate {
+  /** Minimum contributing voters required before an issue's aggregate is shown. */
+  minVoters: number;
+  items: StanceAggregateItem[];
+}
+
 export type BallotResourceCategory = typeof BallotResourceCategory[keyof typeof BallotResourceCategory];
 
 
@@ -462,6 +477,44 @@ export interface BallotInfo {
   liveData: BallotLiveData;
   measures: BallotMeasure[];
   resources: BallotResource[];
+}
+
+export interface BallotPick {
+  candidate: Candidate;
+  /** @nullable */
+  note?: string | null;
+  /** ISO timestamp of when the candidate was saved. */
+  createdAt: string;
+}
+
+export interface AddBallotPickBody {
+  candidateId: string;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface VoteFeedItem {
+  candidateId: string;
+  candidateName: string;
+  issueId: string;
+  issueName: string;
+  billNumber: string;
+  title: string;
+  /** @nullable */
+  url?: string | null;
+  /** The member's recorded vote, e.g. "Yea" or "Nay". */
+  voteCast: string;
+  /**
+     * ISO date of the roll-call vote, when known.
+     * @nullable
+     */
+  date?: string | null;
+  /** Whether this vote pushed toward the issue's "+" pole (internal axis, never shown as left/right). */
+  aligns: boolean;
+}
+
+export interface VoteFeed {
+  items: VoteFeedItem[];
 }
 
 /**

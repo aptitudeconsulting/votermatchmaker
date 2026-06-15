@@ -20,9 +20,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddBallotPickBody,
   AnswersInput,
   BadRequestResponse,
   BallotInfo,
+  BallotPick,
   CandidateDetail,
   HealthStatus,
   Issue,
@@ -37,9 +39,11 @@ import type {
   MatchResult,
   NotFoundResponse,
   Question,
+  StanceAggregate,
   StanceUpdate,
   StatsOverview,
   UnauthorizedResponse,
+  VoteFeed,
   VoterProfile
 } from './api.schemas';
 
@@ -359,6 +363,83 @@ export function useGetStatsOverview<TData = Awaited<ReturnType<typeof getStatsOv
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStatsOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetStanceAggregateUrl = () => {
+
+
+
+
+  return `/api/stats/stances`
+}
+
+/**
+ * @summary Anonymized aggregate of how all voters have positioned themselves per issue
+ */
+export const getStanceAggregate = async ( options?: RequestInit): Promise<StanceAggregate> => {
+
+  return customFetch<StanceAggregate>(getGetStanceAggregateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStanceAggregateQueryKey = () => {
+    return [
+    `/api/stats/stances`
+    ] as const;
+    }
+
+
+export const getGetStanceAggregateQueryOptions = <TData = Awaited<ReturnType<typeof getStanceAggregate>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStanceAggregate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStanceAggregateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStanceAggregate>>> = ({ signal }) => getStanceAggregate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStanceAggregate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStanceAggregateQueryResult = NonNullable<Awaited<ReturnType<typeof getStanceAggregate>>>
+export type GetStanceAggregateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Anonymized aggregate of how all voters have positioned themselves per issue
+ */
+
+export function useGetStanceAggregate<TData = Awaited<ReturnType<typeof getStanceAggregate>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStanceAggregate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStanceAggregateQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1201,6 +1282,301 @@ export function useGetMyBallot<TData = Awaited<ReturnType<typeof getMyBallot>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMyBallotQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyBallotPicksUrl = () => {
+
+
+
+
+  return `/api/me/ballot/picks`
+}
+
+/**
+ * @summary Candidates the voter has saved to their personal ballot
+ */
+export const listMyBallotPicks = async ( options?: RequestInit): Promise<BallotPick[]> => {
+
+  return customFetch<BallotPick[]>(getListMyBallotPicksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyBallotPicksQueryKey = () => {
+    return [
+    `/api/me/ballot/picks`
+    ] as const;
+    }
+
+
+export const getListMyBallotPicksQueryOptions = <TData = Awaited<ReturnType<typeof listMyBallotPicks>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyBallotPicks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyBallotPicksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyBallotPicks>>> = ({ signal }) => listMyBallotPicks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyBallotPicks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyBallotPicksQueryResult = NonNullable<Awaited<ReturnType<typeof listMyBallotPicks>>>
+export type ListMyBallotPicksQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Candidates the voter has saved to their personal ballot
+ */
+
+export function useListMyBallotPicks<TData = Awaited<ReturnType<typeof listMyBallotPicks>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyBallotPicks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyBallotPicksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddMyBallotPickUrl = () => {
+
+
+
+
+  return `/api/me/ballot/picks`
+}
+
+/**
+ * @summary Save a candidate to the voter's personal ballot
+ */
+export const addMyBallotPick = async (addBallotPickBody: AddBallotPickBody, options?: RequestInit): Promise<BallotPick[]> => {
+
+  return customFetch<BallotPick[]>(getAddMyBallotPickUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      addBallotPickBody,)
+  }
+);}
+
+
+
+
+export const getAddMyBallotPickMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyBallotPick>>, TError,{data: BodyType<AddBallotPickBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addMyBallotPick>>, TError,{data: BodyType<AddBallotPickBody>}, TContext> => {
+
+const mutationKey = ['addMyBallotPick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addMyBallotPick>>, {data: BodyType<AddBallotPickBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addMyBallotPick(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddMyBallotPickMutationResult = NonNullable<Awaited<ReturnType<typeof addMyBallotPick>>>
+    export type AddMyBallotPickMutationBody = BodyType<AddBallotPickBody>
+    export type AddMyBallotPickMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+
+    /**
+ * @summary Save a candidate to the voter's personal ballot
+ */
+export const useAddMyBallotPick = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyBallotPick>>, TError,{data: BodyType<AddBallotPickBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addMyBallotPick>>,
+        TError,
+        {data: BodyType<AddBallotPickBody>},
+        TContext
+      > => {
+      return useMutation(getAddMyBallotPickMutationOptions(options));
+    }
+
+export const getRemoveMyBallotPickUrl = (candidateId: string,) => {
+
+
+
+
+  return `/api/me/ballot/picks/${candidateId}`
+}
+
+/**
+ * @summary Remove a candidate from the voter's personal ballot
+ */
+export const removeMyBallotPick = async (candidateId: string, options?: RequestInit): Promise<BallotPick[]> => {
+
+  return customFetch<BallotPick[]>(getRemoveMyBallotPickUrl(candidateId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveMyBallotPickMutationOptions = <TError = ErrorType<UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyBallotPick>>, TError,{candidateId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeMyBallotPick>>, TError,{candidateId: string}, TContext> => {
+
+const mutationKey = ['removeMyBallotPick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeMyBallotPick>>, {candidateId: string}> = (props) => {
+          const {candidateId} = props ?? {};
+
+          return  removeMyBallotPick(candidateId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveMyBallotPickMutationResult = NonNullable<Awaited<ReturnType<typeof removeMyBallotPick>>>
+
+    export type RemoveMyBallotPickMutationError = ErrorType<UnauthorizedResponse>
+
+    /**
+ * @summary Remove a candidate from the voter's personal ballot
+ */
+export const useRemoveMyBallotPick = <TError = ErrorType<UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyBallotPick>>, TError,{candidateId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeMyBallotPick>>,
+        TError,
+        {candidateId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveMyBallotPickMutationOptions(options));
+    }
+
+export const getGetMyVoteFeedUrl = () => {
+
+
+
+
+  return `/api/me/vote-feed`
+}
+
+/**
+ * @summary Recent floor votes cast by the voter's saved candidates
+ */
+export const getMyVoteFeed = async ( options?: RequestInit): Promise<VoteFeed> => {
+
+  return customFetch<VoteFeed>(getGetMyVoteFeedUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyVoteFeedQueryKey = () => {
+    return [
+    `/api/me/vote-feed`
+    ] as const;
+    }
+
+
+export const getGetMyVoteFeedQueryOptions = <TData = Awaited<ReturnType<typeof getMyVoteFeed>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyVoteFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyVoteFeedQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyVoteFeed>>> = ({ signal }) => getMyVoteFeed({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyVoteFeed>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyVoteFeedQueryResult = NonNullable<Awaited<ReturnType<typeof getMyVoteFeed>>>
+export type GetMyVoteFeedQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Recent floor votes cast by the voter's saved candidates
+ */
+
+export function useGetMyVoteFeed<TData = Awaited<ReturnType<typeof getMyVoteFeed>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyVoteFeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyVoteFeedQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

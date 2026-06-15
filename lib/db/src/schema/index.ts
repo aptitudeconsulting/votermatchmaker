@@ -10,4 +10,5 @@ export * from "./candidateDonors";
 export * from "./voters";
 export * from "./voterStances";
 export * from "./voterAnswers";
+export * from "./voterBallotPicks";
 export * from "./syncMeta";

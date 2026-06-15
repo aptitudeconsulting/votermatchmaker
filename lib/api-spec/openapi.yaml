@@ -86,6 +86,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/StatsOverview"
 
+  /stats/stances:
+    get:
+      operationId: getStanceAggregate
+      tags: [stats]
+      summary: Anonymized aggregate of how all voters have positioned themselves per issue
+      responses:
+        "200":
+          description: Anonymized per-issue stance aggregate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StanceAggregate"
+
   /me/profile:
     get:
       operationId: getMyProfile
@@ -346,6 +359,86 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BallotInfo"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/ballot/picks:
+    get:
+      operationId: listMyBallotPicks
+      tags: [ballot]
+      summary: Candidates the voter has saved to their personal ballot
+      responses:
+        "200":
+          description: Saved ballot picks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BallotPick"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: addMyBallotPick
+      tags: [ballot]
+      summary: Save a candidate to the voter's personal ballot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddBallotPickBody"
+      responses:
+        "200":
+          description: Updated list of saved ballot picks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BallotPick"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /me/ballot/picks/{candidateId}:
+    delete:
+      operationId: removeMyBallotPick
+      tags: [ballot]
+      summary: Remove a candidate from the voter's personal ballot
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated list of saved ballot picks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BallotPick"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/vote-feed:
+    get:
+      operationId: getMyVoteFeed
+      tags: [ballot]
+      summary: Recent floor votes cast by the voter's saved candidates
+      responses:
+        "200":
+          description: Recent roll-call vote activity from saved candidates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteFeed"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -913,6 +1006,33 @@ components:
           type: ["string", "null"]
           enum: [running, complete, error, null]
 
+    StanceAggregateItem:
+      type: object
+      required: [issueId, issueName, voterCount, meanPosition]
+      properties:
+        issueId:
+          type: string
+        issueName:
+          type: string
+        voterCount:
+          type: integer
+          description: Number of voters who have a recorded stance on this issue.
+        meanPosition:
+          type: number
+          description: Mean of voters' internal-axis positions (-2..+2) on this issue. Never shown as left/right.
+
+    StanceAggregate:
+      type: object
+      required: [minVoters, items]
+      properties:
+        minVoters:
+          type: integer
+          description: Minimum contributing voters required before an issue's aggregate is shown.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StanceAggregateItem"
+
     BallotResource:
       type: object
       required: [name, description, url, category]
@@ -980,3 +1100,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BallotResource"
+
+    BallotPick:
+      type: object
+      required: [candidate, createdAt]
+      properties:
+        candidate:
+          $ref: "#/components/schemas/Candidate"
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          description: ISO timestamp of when the candidate was saved.
+
+    AddBallotPickBody:
+      type: object
+      required: [candidateId]
+      properties:
+        candidateId:
+          type: string
+        note:
+          type: ["string", "null"]
+
+    VoteFeedItem:
+      type: object
+      required: [candidateId, candidateName, issueId, issueName, billNumber, title, voteCast, aligns]
+      properties:
+        candidateId:
+          type: string
+        candidateName:
+          type: string
+        issueId:
+          type: string
+        issueName:
+          type: string
+        billNumber:
+          type: string
+        title:
+          type: string
+        url:
+          type: ["string", "null"]
+        voteCast:
+          type: string
+          description: The member's recorded vote, e.g. "Yea" or "Nay".
+        date:
+          type: ["string", "null"]
+          description: ISO date of the roll-call vote, when known.
+        aligns:
+          type: boolean
+          description: Whether this vote pushed toward the issue's "+" pole (internal axis, never shown as left/right).
+
+    VoteFeed:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/VoteFeedItem"

@@ -50,6 +50,7 @@ export default function Onboarding() {
   );
   const total = sorted.length;
   const current = sorted[qIndex];
+  const answeredCount = Object.keys(answers).length;
 
   const zipValid = /^\d{5}$/.test(zip.trim());
 
@@ -289,18 +290,45 @@ export default function Onboarding() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                <Button
-                  className="h-12"
-                  disabled={answers[current.id] === undefined || submitAnswers.isPending}
-                  onClick={next}
+                <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-12"
+                    disabled={submitAnswers.isPending}
+                    onClick={next}
+                  >
+                    {qIndex === total - 1 ? "Skip" : "Not sure · Skip"}
+                  </Button>
+                  <Button
+                    className="h-12"
+                    disabled={answers[current.id] === undefined || submitAnswers.isPending}
+                    onClick={next}
+                  >
+                    {qIndex === total - 1
+                      ? submitAnswers.isPending
+                        ? "Building your profile…"
+                        : "See my priorities"
+                      : "Next"}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1 pt-1 text-center">
+                <button
+                  type="button"
+                  disabled={submitAnswers.isPending || answeredCount === 0}
+                  onClick={finishQuestions}
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
                 >
-                  {qIndex === total - 1
-                    ? submitAnswers.isPending
-                      ? "Building your profile…"
-                      : "See my priorities"
-                    : "Next"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                  {submitAnswers.isPending
+                    ? "Building your profile…"
+                    : `Finish early with ${answeredCount} answer${answeredCount === 1 ? "" : "s"}`}
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  You can skip any question — we only score issues you weigh in on, and you can come
+                  back anytime.
+                </p>
               </div>
               {error && <ErrorNote message={error} />}
             </div>

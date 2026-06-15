@@ -25,9 +25,11 @@ import {
   ScoreRing,
   AlignmentBadge,
   PositionScale,
+  IssueCompass,
   DonorTensionBadge,
   formatDollars,
 } from "@/components/civic";
+import { SaveToBallotButton } from "@/components/save-to-ballot";
 import { confidenceLabel } from "@/lib/issue-meta";
 import {
   AlertTriangle,
@@ -95,6 +97,11 @@ export default function CandidateDetail() {
           </div>
           <p className="text-muted-foreground truncate">{candidate.currentRole}</p>
         </div>
+        <Show when="signed-in">
+          <div className="sm:ml-auto">
+            <SaveToBallotButton candidateId={candidate.id} />
+          </div>
+        </Show>
       </div>
 
       <Show when="signed-in">
@@ -320,7 +327,7 @@ function BreakdownRow({ item }: { item: MatchIssueBreakdown }) {
         <span className="text-sm font-medium leading-tight">{item.issueName}</span>
         <AlignmentBadge alignment={item.alignment} />
       </div>
-      <PositionScale voterPosition={item.voterPosition} candidatePosition={item.candidatePosition} />
+      <IssueCompass voterPosition={item.voterPosition} candidatePosition={item.candidatePosition} />
       {item.summary && (
         <p className="line-clamp-2 text-xs text-muted-foreground">{item.summary}</p>
       )}

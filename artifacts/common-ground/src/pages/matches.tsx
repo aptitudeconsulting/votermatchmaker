@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "wouter";
+import { Link, useSearchParams, useLocation } from "wouter";
 import {
   useListMyMatches,
   useGetMyProfile,
@@ -17,7 +17,8 @@ import {
   ReelectionBadge,
   formatDollars,
 } from "@/components/civic";
-import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown, Wallet } from "lucide-react";
+import { ShareResults } from "@/components/share-results";
+import { MapPin, Star, ArrowRight, ThumbsUp, ThumbsDown, Wallet, Scale } from "lucide-react";
 
 const LEVELS: { value: string; label: string }[] = [
   { value: "all", label: "All" },
@@ -92,6 +93,12 @@ export default function Matches() {
             </TabsList>
           </Tabs>
 
+          {matches && matches.length > 0 && (
+            <div className="mt-6">
+              <ShareResults matches={matches} />
+            </div>
+          )}
+
           <div className="mt-6 space-y-4">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
@@ -114,6 +121,7 @@ export default function Matches() {
 }
 
 function MatchCard({ match }: { match: MatchResult }) {
+  const [, navigate] = useLocation();
   const {
     candidate,
     score,
@@ -143,6 +151,19 @@ function MatchCard({ match }: { match: MatchResult }) {
               {candidate.upForReelection && (
                 <ReelectionBadge electionYear={candidate.electionYear} />
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto h-7 gap-1.5 px-2.5 text-xs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(`/compare?ids=${encodeURIComponent(candidate.id)}`);
+                }}
+              >
+                <Scale className="h-3.5 w-3.5" />
+                Compare
+              </Button>
             </div>
             <p className="text-sm text-muted-foreground truncate">{candidate.currentRole}</p>
             <p className="text-sm break-words">{summary}</p>

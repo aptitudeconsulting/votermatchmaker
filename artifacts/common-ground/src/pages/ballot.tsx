@@ -1,9 +1,17 @@
-import { useGetMyBallot, type BallotResource } from "@workspace/api-client-react";
+import {
+  useGetMyBallot,
+  useListMyBallotPicks,
+  useRemoveMyBallotPick,
+  type BallotResource,
+  type BallotPick,
+} from "@workspace/api-client-react";
 import { Link } from "wouter";
+import { Show } from "@clerk/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInvalidateVoterData } from "@/lib/invalidate";
 import {
   MapPin,
   ExternalLink,
@@ -13,6 +21,14 @@ import {
   ThumbsUp,
   ThumbsDown,
   Vote,
+  ListChecks,
+  Printer,
+  X,
+  ArrowRight,
+  CalendarClock,
+  UserCheck,
+  Navigation,
+  PenLine,
 } from "lucide-react";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -47,6 +63,186 @@ function ResourceCard({ resource }: { resource: BallotResource }) {
   );
 }
 
+interface CivicAction {
+  label: string;
+  description: string;
+  href: string;
+  icon: typeof PenLine;
+}
+
+/**
+ * Prominent "make a plan to vote" action band. These are the high-intent civic
+ * tasks (register, check registration, find your polling place, deadlines) pulled
+ * out of the long resource grid into one always-available band. Every link is an
+ * official government or recognized non-partisan tool, all address/state-aware, so
+ * the band degrades gracefully even with no live Google Civic election data — it is
+ * never gated on a known location or an active election.
+ */
+function CivicActionBand({
+  electionDay,
+}: {
+  electionDay?: string | null;
+}) {
+  const actions: CivicAction[] = [
+    {
+      label: "Register to vote",
+      description: "Register or update your registration on the official U.S. government site.",
+      href: "https://vote.gov/",
+      icon: PenLine,
+    },
+    {
+      label: "Check your registration",
+      description: "Confirm you're registered and see your state's deadlines (NASS).",
+      href: "https://www.nass.org/can-I-vote/voter-registration-status",
+      icon: UserCheck,
+    },
+    {
+      label: "Find your polling place",
+      description: "Look up where and when to vote in person for your address (NASS).",
+      href: "https://www.nass.org/can-I-vote/find-your-polling-place",
+      icon: Navigation,
+    },
+  ];
+
+  return (
+    <section className="mt-8 rounded-xl border bg-card p-5 print-hidden">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <CalendarClock className="h-5 w-5 shrink-0 text-primary" />
+          <h2 className="text-lg font-semibold">Make a plan to vote</h2>
+        </div>
+        {electionDay && (
+          <Badge variant="secondary" className="self-start font-normal sm:self-auto">
+            Next election day: {electionDay}
+          </Badge>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Three quick, official steps — wherever you live. Deadlines and rules vary
+        by state, so check early.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {actions.map((a) => {
+          const Icon = a.icon;
+          return (
+            <a
+              key={a.href}
+              href={a.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col gap-2 rounded-lg border bg-background p-4 transition-colors hover:border-primary/50"
+            >
+              <span className="flex items-center justify-between">
+                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <ExternalLink className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+              </span>
+              <span className="font-medium leading-snug">{a.label}</span>
+              <span className="text-xs text-muted-foreground">{a.description}</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function SavedPickRow({ pick }: { pick: BallotPick }) {
+  const invalidate = useInvalidateVoterData();
+  const remove = useRemoveMyBallotPick();
+  return (
+    <div className="flex items-center gap-3 rounded-lg border bg-card p-3">
+      <ListChecks className="h-4 w-4 shrink-0 text-primary" />
+      <Link href={`/candidates/${pick.candidate.id}`} className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium hover:underline">
+          {pick.candidate.name}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {pick.candidate.currentRole}
+          {pick.candidate.party ? ` · ${pick.candidate.party}` : ""}
+        </span>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="print-hidden h-8 w-8 shrink-0 text-muted-foreground"
+        aria-label={`Remove ${pick.candidate.name} from your ballot`}
+        disabled={remove.isPending}
+        onClick={() =>
+          remove.mutate(
+            { candidateId: pick.candidate.id },
+            { onSuccess: () => void invalidate() },
+          )
+        }
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function SavedPicksSection() {
+  const { data: picks, isLoading } = useListMyBallotPicks();
+  const items = picks ?? [];
+
+  return (
+    <section className="mt-10" data-ballot-print>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <ListChecks className="h-5 w-5 shrink-0 text-primary" />
+          <h2 className="text-xl font-semibold">My ballot</h2>
+        </div>
+        {items.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="print-hidden gap-2 self-start sm:self-auto"
+            onClick={() => window.print()}
+          >
+            <Printer className="h-4 w-4" />
+            Print checklist
+          </Button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground print-hidden">
+        Candidates you've saved while browsing. Print this as a checklist to take with you.
+      </p>
+
+      {isLoading ? (
+        <div className="mt-4 space-y-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <Card className="mt-4 print-hidden">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <ListChecks className="h-9 w-9 text-muted-foreground" />
+            <div>
+              <p className="font-medium">No saved candidates yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tap "Save to ballot" on any candidate to build your personal list.
+              </p>
+            </div>
+            <Link href="/matches">
+              <Button className="mt-1 gap-2">
+                See your matches <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {items.map((p) => (
+            <SavedPickRow key={p.candidate.id} pick={p} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Ballot() {
   const { data: ballot, isLoading } = useGetMyBallot();
 
@@ -70,7 +266,7 @@ export default function Ballot() {
         )}
       </div>
 
-      <div className="mt-6 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+      <div className="mt-6 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4 print-hidden">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         <p className="text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Strictly non-partisan.</span>{" "}
@@ -79,6 +275,12 @@ export default function Ballot() {
           arguments for and against — we never tell you how to vote.
         </p>
       </div>
+
+      <CivicActionBand electionDay={ballot?.liveData?.electionDay} />
+
+      <Show when="signed-in">
+        <SavedPicksSection />
+      </Show>
 
       {isLoading ? (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

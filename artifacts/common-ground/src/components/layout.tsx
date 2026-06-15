@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { useState, useEffect } from "react";
+import { VoteFeedBell } from "@/components/vote-feed";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -43,12 +44,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/candidates">
                   <Button variant="ghost" className={location === "/candidates" ? "bg-accent" : ""}>Candidates</Button>
                 </Link>
+                <Link href="/compare">
+                  <Button variant="ghost" className={location === "/compare" ? "bg-accent" : ""}>Compare</Button>
+                </Link>
                 <Link href="/ballot">
                   <Button variant="ghost" className={location === "/ballot" ? "bg-accent" : ""}>Ballot</Button>
                 </Link>
                 <Link href="/profile">
                   <Button variant="ghost" className={location === "/profile" ? "bg-accent" : ""}>Profile</Button>
                 </Link>
+                <VoteFeedBell />
                 <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
               </Show>
               <Show when="signed-out">
@@ -63,7 +68,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Mobile Nav */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center gap-1 md:hidden">
+            <Show when="signed-in">
+              <VoteFeedBell />
+            </Show>
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -79,6 +87,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                     <Link href="/candidates">
                       <Button variant="ghost" className={`w-full justify-start text-lg ${location === "/candidates" ? "bg-accent" : ""}`}>Candidates</Button>
+                    </Link>
+                    <Link href="/compare">
+                      <Button variant="ghost" className={`w-full justify-start text-lg ${location === "/compare" ? "bg-accent" : ""}`}>Compare</Button>
                     </Link>
                     <Link href="/ballot">
                       <Button variant="ghost" className={`w-full justify-start text-lg ${location === "/ballot" ? "bg-accent" : ""}`}>Ballot</Button>

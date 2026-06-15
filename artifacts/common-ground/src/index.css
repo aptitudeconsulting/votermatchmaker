@@ -218,3 +218,28 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/*
+ * Print view for the personal ballot. When printing, hide everything except the
+ * region marked [data-ballot-print] so voters can take a clean, paper checklist
+ * of their saved candidates into the booth.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-ballot-print],
+  [data-ballot-print] * {
+    visibility: visible;
+  }
+  [data-ballot-print] {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 1.5rem;
+    width: 100%;
+  }
+  .print-hidden {
+    display: none !important;
+  }
+}

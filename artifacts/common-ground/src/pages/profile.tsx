@@ -5,6 +5,7 @@ import {
   useUpdateMyLocation,
   useUpdateMyStance,
   useResetMyProfile,
+  useGetStanceAggregate,
   type IssueStance,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { importanceMeta, issueIconById } from "@/lib/issue-meta";
 import { useInvalidateVoterData } from "@/lib/invalidate";
-import { MapPin, RotateCcw } from "lucide-react";
+import { IssueCompass } from "@/components/civic";
+import { MapPin, RotateCcw, Users } from "lucide-react";
 
 export default function Profile() {
   const [, navigate] = useLocation();
@@ -144,6 +146,8 @@ export default function Profile() {
         </CardContent>
       </Card>
 
+      {stances.length > 0 && <HowYouCompare stances={stances} />}
+
       <Separator />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
@@ -233,6 +237,68 @@ function PriorityTiers({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Anonymized "how you compare" panel: for each issue the signed-in voter has a
+ * stance on, shows their internal-axis position next to the mean position of all
+ * voters (withheld until enough people have answered). Purely descriptive — never
+ * framed as left/right or "normal vs not".
+ */
+function HowYouCompare({ stances }: { stances: IssueStance[] }) {
+  const { data } = useGetStanceAggregate();
+  if (!data) return null;
+
+  const meanByIssue = new Map(data.items.map((i) => [i.issueId, i]));
+  const rows = stances
+    .map((s) => ({ stance: s, agg: meanByIssue.get(s.issueId) }))
+    .filter(
+      (r): r is { stance: IssueStance; agg: NonNullable<typeof r.agg> } =>
+        r.agg != null,
+    )
+    .sort((a, b) => b.stance.importance - a.stance.importance);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Users className="h-5 w-5 text-primary" /> How you compare
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Your stance next to the average of everyone who's answered. Anonymous and
+          aggregated — issues are only shown once at least {data.minVoters} people have
+          weighed in. This is a snapshot of other users, not a measure of right or wrong.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {rows.map(({ stance, agg }) => (
+          <div key={stance.issueId} className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-sm font-medium">{stance.issueName}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {agg.voterCount.toLocaleString()} voters
+              </span>
+            </div>
+            <IssueCompass
+              voterPosition={stance.position}
+              candidatePosition={agg.meanPosition}
+            />
+          </div>
+        ))}
+        <p className="text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full bg-primary" /> You
+          </span>
+          <span className="mx-2">·</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full bg-foreground" /> Everyone's average
+          </span>
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -9,6 +9,7 @@
 - [Bill provision enrichment + v2 scoring](bill-provision-enrichment.md) — v2 positions come ONLY from the LLM CRS classifier (no heuristic/prior fallback); directional rows only move positions; enrich is sole positions writer + purges legacy; CRS lags so enrich OLDEST bills.
 - [Post-merge codegen staleness](post-merge-codegen-staleness.md) — missing @workspace/api-client-react exports after a task merge mean stale generated client; run codegen + typecheck:libs, don't edit app code.
 - [pnpm install reaping](pnpm-install-reaping.md) — backgrounded installs get reaped; run `pnpm install --offline --ignore-scripts` foreground so it finishes in one bash call.
+- [Orval conditional useQuery](orval-conditional-usequery.md) — generated React Query hooks called conditionally (enabled/skip) REQUIRE an explicit queryKey via the getXxxQueryKey helper, or TS errors.
 - [API integration tests](api-integration-tests.md) — boot real `app` on `listen(0)` + `fetch`; MUST `pool.end()` in afterAll or vitest hangs; assert `items.length===min(total,limit)`, never couple to row counts.
 - [Public LLM endpoint cost](public-llm-endpoint-cost.md) — paid-LLM-on-cache-miss public endpoints need single-flight + null-before-call, not just after-the-fact caching.
 - [Re-election / term-end data](reelection-term-data.md) — Congress.gov lacks usable term-end/Senate-class; use congress-legislators dataset; COALESCE term_end on upsert so a fetch outage can't null it.

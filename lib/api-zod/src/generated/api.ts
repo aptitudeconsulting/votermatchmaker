@@ -69,6 +69,20 @@ export const GetStatsOverviewResponse = zod.object({
 
 
 /**
+ * @summary Anonymized aggregate of how all voters have positioned themselves per issue
+ */
+export const GetStanceAggregateResponse = zod.object({
+  "minVoters": zod.number().describe('Minimum contributing voters required before an issue\'s aggregate is shown.'),
+  "items": zod.array(zod.object({
+  "issueId": zod.string(),
+  "issueName": zod.string(),
+  "voterCount": zod.number().describe('Number of voters who have a recorded stance on this issue.'),
+  "meanPosition": zod.number().describe('Mean of voters\' internal-axis positions (-2..+2) on this issue. Never shown as left\/right.')
+}))
+})
+
+
+/**
  * @summary Get the signed-in voter's profile
  */
 export const GetMyProfileResponse = zod.object({
@@ -506,6 +520,115 @@ export const GetMyBallotResponse = zod.object({
   "description": zod.string(),
   "url": zod.string(),
   "category": zod.enum(['ballot-measures', 'sample-ballot', 'registration', 'polling', 'research'])
+}))
+})
+
+
+/**
+ * @summary Candidates the voter has saved to their personal ballot
+ */
+export const ListMyBallotPicksResponseItem = zod.object({
+  "candidate": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "party": zod.string().nullish(),
+  "level": zod.enum(['senate', 'house', 'local']),
+  "state": zod.string().nullish(),
+  "stateName": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "currentRole": zod.string(),
+  "incumbent": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
+  "dataSource": zod.enum(['congress.gov', 'sample']),
+  "isSample": zod.boolean()
+}),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string().describe('ISO timestamp of when the candidate was saved.')
+})
+export const ListMyBallotPicksResponse = zod.array(ListMyBallotPicksResponseItem)
+
+
+/**
+ * @summary Save a candidate to the voter's personal ballot
+ */
+export const AddMyBallotPickBody = zod.object({
+  "candidateId": zod.string(),
+  "note": zod.string().nullish()
+})
+
+export const AddMyBallotPickResponseItem = zod.object({
+  "candidate": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "party": zod.string().nullish(),
+  "level": zod.enum(['senate', 'house', 'local']),
+  "state": zod.string().nullish(),
+  "stateName": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "currentRole": zod.string(),
+  "incumbent": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
+  "dataSource": zod.enum(['congress.gov', 'sample']),
+  "isSample": zod.boolean()
+}),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string().describe('ISO timestamp of when the candidate was saved.')
+})
+export const AddMyBallotPickResponse = zod.array(AddMyBallotPickResponseItem)
+
+
+/**
+ * @summary Remove a candidate from the voter's personal ballot
+ */
+export const RemoveMyBallotPickParams = zod.object({
+  "candidateId": zod.coerce.string()
+})
+
+export const RemoveMyBallotPickResponseItem = zod.object({
+  "candidate": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "party": zod.string().nullish(),
+  "level": zod.enum(['senate', 'house', 'local']),
+  "state": zod.string().nullish(),
+  "stateName": zod.string().nullish(),
+  "district": zod.string().nullish(),
+  "currentRole": zod.string(),
+  "incumbent": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "bioguideId": zod.string().nullish(),
+  "upForReelection": zod.boolean().describe('True when this seat is contested in the current\/upcoming general election.'),
+  "electionYear": zod.number().nullable().describe('The November (even) year this seat is next contested, or null if unknown.'),
+  "dataSource": zod.enum(['congress.gov', 'sample']),
+  "isSample": zod.boolean()
+}),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string().describe('ISO timestamp of when the candidate was saved.')
+})
+export const RemoveMyBallotPickResponse = zod.array(RemoveMyBallotPickResponseItem)
+
+
+/**
+ * @summary Recent floor votes cast by the voter's saved candidates
+ */
+export const GetMyVoteFeedResponse = zod.object({
+  "items": zod.array(zod.object({
+  "candidateId": zod.string(),
+  "candidateName": zod.string(),
+  "issueId": zod.string(),
+  "issueName": zod.string(),
+  "billNumber": zod.string(),
+  "title": zod.string(),
+  "url": zod.string().nullish(),
+  "voteCast": zod.string().describe('The member\'s recorded vote, e.g. \"Yea\" or \"Nay\".'),
+  "date": zod.string().nullish().describe('ISO date of the roll-call vote, when known.'),
+  "aligns": zod.boolean().describe('Whether this vote pushed toward the issue\'s \"+\" pole (internal axis, never shown as left\/right).')
 }))
 })
 

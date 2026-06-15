@@ -131,6 +131,61 @@ export function PositionScale({
 }
 
 /**
+ * Neutral how-far-apart label derived purely from the absolute gap between the
+ * voter's and candidate's internal-axis coordinates (0..4). It never references
+ * direction (left/right) — only distance — so it stays non-partisan.
+ */
+function gapMeta(gap: number): { label: string; className: string } {
+  if (gap <= 0.5) return { label: "Closely aligned", className: "text-emerald-600 dark:text-emerald-400" };
+  if (gap <= 1.5) return { label: "Mostly aligned", className: "text-emerald-600/90 dark:text-emerald-400/90" };
+  if (gap <= 2.5) return { label: "Some distance", className: "text-amber-600 dark:text-amber-400" };
+  return { label: "Far apart", className: "text-rose-600 dark:text-rose-400" };
+}
+
+/**
+ * A labeled per-issue "compass": the shared PositionScale plus a You/Candidate
+ * legend and a neutral distance read-out. Used wherever a voter is comparing
+ * their own coordinate to a candidate's. Falls back gracefully when either
+ * coordinate is missing (e.g. signed-out or insufficient record).
+ */
+export function IssueCompass({
+  voterPosition,
+  candidatePosition,
+  className,
+}: {
+  voterPosition?: number | null;
+  candidatePosition?: number | null;
+  className?: string;
+}) {
+  const hasBoth =
+    typeof voterPosition === "number" && typeof candidatePosition === "number";
+  const gap = hasBoth ? Math.abs(voterPosition - candidatePosition) : null;
+  const meta = gap !== null ? gapMeta(gap) : null;
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <PositionScale voterPosition={voterPosition} candidatePosition={candidatePosition} />
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="flex items-center gap-3">
+          {typeof voterPosition === "number" && (
+            <span className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+              You
+            </span>
+          )}
+          {typeof candidatePosition === "number" && (
+            <span className="flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground" />
+              Them
+            </span>
+          )}
+        </span>
+        {meta && <span className={cn("font-medium", meta.className)}>{meta.label}</span>}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Neutral badge flagging that classified donor money points the opposite way from
  * a candidate's legislation-derived position. Deliberately money-colored amber, not
  * partisan — it signals "worth a look", never "good"/"bad".
