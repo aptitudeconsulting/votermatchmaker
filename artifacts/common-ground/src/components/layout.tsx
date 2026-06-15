@@ -131,6 +131,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               How it works
             </Link>
             <Link
+              href="/whitepaper"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Whitepaper
+            </Link>
+            <Link
               href="/candidates"
               className="text-sm text-muted-foreground hover:text-foreground"
             >

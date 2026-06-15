@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Database,
   ArrowRight,
+  FileText,
 } from "lucide-react";
 
 export default function Methodology() {
@@ -95,7 +96,28 @@ export default function Methodology() {
         </Section>
       </div>
 
-      <Card className="mt-10">
+      <Card className="mt-10 border-primary/30 bg-primary/5">
+        <CardContent className="flex flex-col items-start gap-3 py-6">
+          <div className="flex items-center gap-2 text-primary">
+            <FileText className="h-5 w-5" />
+            <h2 className="text-lg font-semibold text-foreground">
+              Want the full detail?
+            </h2>
+          </div>
+          <p className="text-muted-foreground">
+            Our methodology whitepaper documents every data source, model, and
+            formula — including the exact scoring and confidence equations — so
+            anyone can audit or reproduce a match.
+          </p>
+          <Button asChild variant="outline">
+            <Link href="/whitepaper">
+              Read the whitepaper <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
         <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
           <h2 className="text-xl font-semibold">See it for yourself</h2>
           <p className="max-w-md text-muted-foreground">
